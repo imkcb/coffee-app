@@ -1,4 +1,11 @@
+import os
 import streamlit as st
+
+# Streamlit CloudのSecretsをプログラム側の環境変数へ反映
+for k in ["SUPABASE_URL", "SUPABASE_KEY", "GEMINI_API_KEY"]:
+    if k in st.secrets:
+        os.environ[k] = st.secrets[k]
+
 import db
 import ai
 import prompts
@@ -371,7 +378,7 @@ with tab4:
             log_type = data_payload.get("coffee_type", "ホット")
             log_water = data_payload.get("water_per_cup", 300)
             
-            with st.expander(f"📅 {created_at} - 🫘 {bean_name} [{log_type}/{log_water}ml] (★{curr_rating})"):
+            with st.expander(f"📅 {created_at} 🫘 {bean_name} [{log_type}/{log_water}ml] (★{curr_rating})"):
                 st.write(f"**推奨ドリッパー**: {recipe.get('selected_dripper', '未設定')} | **粉量**: {recipe.get('recommended_powder_weight', '-')} g | **湯温**: {recipe.get('water_temp', '-')} ℃")
                 
                 # 履歴でもステップを表形式で表示
@@ -406,7 +413,7 @@ with tab4:
                     st.success("評価を更新しました。")
                     st.rerun()
 
-                if st.button("🗑️️ この履歴を削除", key=f"del_log_{log_id}"):
+                if st.button("🗑 この履歴を削除", key=f"del_log_{log_id}"):
                     db.delete_drip_log(log_id)
                     st.rerun()
     else:
