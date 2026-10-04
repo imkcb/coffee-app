@@ -31,8 +31,9 @@ def get_equipment():
 def get_drip_logs():
     try:
         supabase = get_client()
-        res = supabase.table("drip_logs").select("*").order("created_at", ascending=False).execute()
-        return res.data
+        # エラーの原因になりやすい並び替え命令を外し、全件を安全に取得する
+        res = supabase.table("drip_logs").select("*").execute()
+        return res.data or []
     except Exception as e:
         print(f"Error fetching drip logs: {e}")
         return []
