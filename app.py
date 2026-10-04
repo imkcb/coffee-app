@@ -124,7 +124,7 @@ with tab1:
 
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚀 最適なレシピを提案してもらう", key="unique_recipe_button", use_container_width=True):
-        with st.spinner("天才焙煎士（Gemini）が最適なドリッパーと粉量、レシピを考案しています..."):
+        with st.spinner("BARIS⚡太郎くんが最適なドリッパーと粉量、レシピを考案しています..."):
             roast_date_str = roast_date_input.strftime("%Y-%m-%d") if roast_date_input else "未指定"
             active_equipment = [eq for eq in equipment_data if eq.get("is_active", True) is not False]
             
