@@ -1,4 +1,11 @@
 import streamlit as st
+import os
+import streamlit as st
+
+# Streamlit CloudのSecretsをプログラム側の環境変数へ反映
+for k in ["SUPABASE_URL", "SUPABASE_KEY", "GEMINI_API_KEY"]:
+    if k in st.secrets:
+        os.environ[k] = st.secrets[k]
 import db
 import ai
 import prompts
