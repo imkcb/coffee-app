@@ -372,6 +372,10 @@ with tab4:
             curr_goals = [raw_goals] if isinstance(raw_goals, str) else raw_goals
             curr_comment = data_payload.get("comment", "")
             
+            # 安全な初期値フィルタリング（選択肢に存在する文字だけに制限）
+            safe_issues = [x for x in curr_issues if x in prompts.TASTE_ISSUES_OPTIONS]
+            safe_goals = [x for x in curr_goals if x in prompts.TARGET_GOALS_OPTIONS]
+
             log_type = data_payload.get("coffee_type", "ホット")
             log_water = data_payload.get("water_per_cup", 300)
 
@@ -392,9 +396,9 @@ with tab4:
                 f_col1, f_col2 = st.columns(2)
                 with f_col1:
                     new_rating = st.slider("総合満足度", min_value=1, max_value=5, value=curr_rating, key=f"hist_rate_{log_id}")
-                    new_issues = st.multiselect("味の気になった点", prompts.TASTE_ISSUES_OPTIONS, default=curr_issues, key=f"hist_issue_{log_id}")
+                    new_issues = st.multiselect("味の気になった点", prompts.TASTE_ISSUES_OPTIONS, default=safe_issues, key=f"hist_issue_{log_id}")
                 with f_col2:
-                    new_goals = st.multiselect("次回どうしたいか", prompts.TARGET_GOALS_OPTIONS, default=curr_goals, key=f"hist_goal_{log_id}")
+                    new_goals = st.multiselect("次回どうしたいか", prompts.TARGET_GOALS_OPTIONS, default=safe_goals, key=f"hist_goal_{log_id}")
                     new_comment = st.text_input("自由コメント", value=curr_comment, key=f"hist_comment_{log_id}")
                 
                 if st.button("⭐ 評価を更新する", key=f"btn_hist_rate_{log_id}"):
