@@ -29,6 +29,16 @@ if "water_per_cup" not in st.session_state:
 
 # 3. アプリタイトルと4タブ構成の定義
 st.title("BARIS⚡太郎くん")
+# --- 一時確認用デバッグコード ---
+st.warning("【デバッグ情報】")
+st.write("URL設定あり:", bool(os.getenv("SUPABASE_URL")))
+st.write("KEY設定あり:", bool(os.getenv("SUPABASE_KEY")))
+try:
+    test_data = db.get_beans()
+    st.write("取得データ件数:", len(test_data))
+except Exception as e:
+    st.error(f"DBエラー詳細: {e}")
+# --------------------------------
 tab1, tab2, tab3, tab4 = st.tabs(["☕ ドリップ", "🫘 豆管理", "🛠️ 器具管理", "📈 履歴"])
 
 # ==========================================
