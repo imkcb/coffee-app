@@ -36,7 +36,7 @@ if "water_per_cup" not in st.session_state:
 st.title("BARIS⚡太郎くん")
 tab1, tab2, tab3, tab4 = st.tabs(["☕ ドリップ", "🫘 豆管理", "🛠️ 器具管理", "📈 履歴"])
 
-# 全構造対応型スマート値取得ヘルパー
+# 全表記揺れ対応型フィールド抽出ヘルパー
 def get_field(data, keys, default="-"):
     if not data:
         return default
@@ -49,7 +49,7 @@ def get_field(data, keys, default="-"):
                 v = data[k]
                 if not isinstance(v, (dict, list)):
                     return str(v)
-        # 1階層下のネスト構造（recipe, selected_equipment, parameters等）を深さ優先探索
+        # ネストされた辞書要素（extraction_parameters, selected_equipments, flavor_profile等）を探索
         for sub in data.values():
             if isinstance(sub, dict):
                 for k in keys:
@@ -58,29 +58,6 @@ def get_field(data, keys, default="-"):
                         if not isinstance(v, (dict, list)):
                             return str(v)
     return default
-
-# ステップの注ぎ量・累計湯量を解析する関数（"81ml (累計140ml)" 等の表記に対応）
-def parse_water_info(s):
-    # 1. 独立したキーを探す
-    step_w = get_field(s, ['pour_amount', 'pour_weight', 'step_water'], default="")
-    total_w = get_field(s, ['cumulative_amount', 'total_amount', 'accumulated_weight', 'total_water'], default="")
-    
-    # 2. water_volume キーから複合文字列を解析
-    wv = get_field(s, ['water_volume', 'water', 'volume'], default="")
-    if wv and wv != "-":
-        match = re.search(r'([0-9\.]+\s*(?:ml|g)?)\s*(?:[\(（]累計\s*([0-9\.]+\s*(?:ml|g)?)[\)）])?', wv)
-        if match:
-            if not step_w or step_w == "-":
-                step_w = match.group(1).strip() if match.group(1) else wv
-            if (not total_w or total_w == "-") and match.group(2):
-                total_w = match.group(2).strip()
-        else:
-            if not step_w or step_w == "-":
-                step_w = wv
-
-    step_w = step_w if step_w else "-"
-    total_w = total_w if total_w else "-"
-    return step_w, total_w
 
 # ==========================================
 # タブ1: ドリップ画面
@@ -215,24 +192,22 @@ with tab1:
         st.subheader("✨ 使用器具指示")
         st.write(f"- **ドリッパー**: {get_field(recipe_obj, ['dripper', 'used_dripper', 'selected_dripper'])}")
         st.write(f"- **フィルター**: {get_field(recipe_obj, ['filter', 'used_filter', 'selected_filter'])}")
-        st.write(f"- **ミル・グラインダー**: {get_field(recipe_obj, ['mill', 'grinder', 'used_grinder', 'selected_grinder'])}")
+        st.write(f"- **ミル・グラインダー**: {get_field(recipe_obj, ['grinder', 'mill', 'used_grinder', 'selected_grinder'])}")
         
         st.divider()
-        st.write(f"**おすすめ粉量**: {get_field(recipe_obj, ['coffee_beans_weight', 'coffee_bean_weight', 'bean_weight', 'recommended_powder_weight'])} g")
-        st.write(f"**お湯の温度**: {get_field(recipe_obj, ['water_temperature', 'temperature', 'water_temp'])} ℃")
+        st.write(f"**おすすめ粉量**: {get_field(recipe_obj, ['coffee_amount_g', 'coffee_beans_weight', 'coffee_bean_weight', 'bean_weight', 'recommended_powder_weight'])} g")
+        st.write(f"**お湯の温度**: {get_field(recipe_obj, ['water_temperature_c', 'water_temperature', 'temperature', 'water_temp'])} ℃")
         st.write(f"**ミルのグラインド設定**: {get_field(recipe_obj, ['grind_size', 'grind_setting', 'grind'])}")
         
         steps_list = []
         if isinstance(recipe_obj, dict):
             steps_list = recipe_obj.get('recipe_steps') or recipe_obj.get('steps') or []
-            if not steps_list and 'recipe' in recipe_obj and isinstance(recipe_obj['recipe'], dict):
-                steps_list = recipe_obj['recipe'].get('recipe_steps') or []
 
         bloom_val = "-"
         if isinstance(steps_list, list) and len(steps_list) > 0:
             first_s = steps_list[0]
             if isinstance(first_s, dict):
-                bloom_val = first_s.get('time_range') or first_s.get('start_time') or first_s.get('duration') or "-"
+                bloom_val = get_field(first_s, ['time_range', 'start_time', 'duration'])
 
         st.write(f"**蒸らし時間**: {bloom_val}")
 
@@ -244,18 +219,16 @@ with tab1:
                 if isinstance(s, dict):
                     step_num = get_field(s, ['step_number', 'step'], default=str(i+1))
                     time_t = get_field(s, ['time_range', 'start_time', 'time_target', 'time'])
-                    
-                    # 注ぎ量と累計湯量の自動解析
-                    step_w, total_w = parse_water_info(s)
-                    
+                    step_w = get_field(s, ['pour_amount_ml', 'pour_amount', 'pour_weight', 'step_water', 'water_volume'])
+                    total_w = get_field(s, ['total_amount_ml', 'total_amount', 'cumulative_amount', 'accumulated_weight', 'total_water'])
                     flow = get_field(s, ['flow_rate', 'flow_rate_description', 'flow'])
-                    method = get_field(s, ['pouring_method', 'pouring_style', 'method'])
+                    method = get_field(s, ['pour_technique', 'pouring_method', 'pouring_style', 'method'])
                     purp = get_field(s, ['purpose', 'step_name', 'aim'], default="抽出")
 
-                    table_md += f"| {step_num} | {time_t} | {step_w} | {total_w} | {flow} | {method} | {purp} |\n"
+                    table_md += f"| {step_num} | {time_t} | {step_w}ml | {total_w}ml | {flow} | {method} | {purp} |\n"
             st.markdown(table_md)
 
-        note_val = get_field(recipe_obj, ['brewing_tips', 'note', 'tasting_notes', 'advice', 'reason'])
+        note_val = get_field(recipe_obj, ['notes', 'brewing_tips', 'note', 'tasting_notes', 'advice', 'reason'])
         if note_val != "-":
             st.info(f"💡 ワンポイント: {note_val}")
 
@@ -448,8 +421,8 @@ with tab4:
             log_water = data_payload.get("water_per_cup", 300)
 
             d_val = get_field(log_recipe, ['dripper', 'used_dripper', 'selected_dripper'])
-            w_val = get_field(log_recipe, ['coffee_beans_weight', 'coffee_bean_weight', 'bean_weight', 'recommended_powder_weight'])
-            t_val = get_field(log_recipe, ['water_temperature', 'temperature', 'water_temp'])
+            w_val = get_field(log_recipe, ['coffee_amount_g', 'coffee_beans_weight', 'coffee_bean_weight', 'bean_weight', 'recommended_powder_weight'])
+            t_val = get_field(log_recipe, ['water_temperature_c', 'water_temperature', 'temperature', 'water_temp'])
 
             with st.expander(f"📅 {created_at} 🫘 {bean_name} [{log_type}/{log_water}ml] (★{curr_rating})"):
                 st.write(f"**推奨ドリッパー**: {d_val} | **粉量**: {w_val} g | **湯温**: {t_val} ℃")
@@ -457,8 +430,6 @@ with tab4:
                 steps_list = []
                 if isinstance(log_recipe, dict):
                     steps_list = log_recipe.get('recipe_steps') or log_recipe.get('steps') or []
-                    if not steps_list and 'recipe' in log_recipe and isinstance(log_recipe['recipe'], dict):
-                        steps_list = log_recipe['recipe'].get('recipe_steps') or []
 
                 if steps_list and isinstance(steps_list, list):
                     st.markdown("**抽出ステップ**:")
@@ -468,13 +439,13 @@ with tab4:
                         if isinstance(s, dict):
                             step_num = get_field(s, ['step_number', 'step'], default=str(i+1))
                             time_t = get_field(s, ['time_range', 'start_time', 'time_target', 'time'])
-                            
-                            step_w, total_w = parse_water_info(s)
-                            
+                            step_w = get_field(s, ['pour_amount_ml', 'pour_amount', 'pour_weight', 'step_water', 'water_volume'])
+                            total_w = get_field(s, ['total_amount_ml', 'total_amount', 'cumulative_amount', 'accumulated_weight', 'total_water'])
                             flow = get_field(s, ['flow_rate', 'flow_rate_description', 'flow'])
-                            method = get_field(s, ['pouring_method', 'pouring_style', 'method'])
+                            method = get_field(s, ['pour_technique', 'pouring_method', 'pouring_style', 'method'])
                             purp = get_field(s, ['purpose', 'step_name', 'aim'], default="抽出")
-                            table_md += f"| {step_num} | {time_t} | {step_w} | {total_w} | {flow} | {method} | {purp} |\n"
+
+                            table_md += f"| {step_num} | {time_t} | {step_w}ml | {total_w}ml | {flow} | {method} | {purp} |\n"
                     st.markdown(table_md)
                 
                 st.divider()
