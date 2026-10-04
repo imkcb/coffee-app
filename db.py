@@ -1,68 +1,38 @@
 import os
-from supabase import create_client, Client
-from dotenv import load_dotenv
+from supabase import create_client
 
-load_dotenv()
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+# 接続クライアントを動的に取得する関数
+def get_client():
+    url = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_KEY")
+    return create_client(url, key)
 
-supabase: Client = None
-if SUPABASE_URL and SUPABASE_KEY:
-    try:
-        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-    except Exception:
-        supabase = None
-
+# 豆データの取得処理
 def get_beans():
-    if not supabase: return []
     try:
-        res = supabase.table("beans").select("*").order("created_at", desc=True).execute()
-        return res.data or []
-    except Exception:
+        supabase = get_client()  # 呼び出し時にクライアントを作成
+        res = supabase.table("beans").select("*").execute()
+        return res.data
+    except Exception as e:
+        print(f"Error fetching beans: {e}")
         return []
 
-def insert_bean(data: dict):
-    return supabase.table("beans").insert(data).execute()
-
-def update_bean(bean_id: int, data: dict):
-    return supabase.table("beans").update(data).eq("id", bean_id).execute()
-
-def delete_bean(bean_id: int):
-    return supabase.table("beans").delete().eq("id", bean_id).execute()
-
+# 器具データの取得処理
 def get_equipment():
-    if not supabase: return []
     try:
-        res = supabase.table("equipment").select("*").order("created_at", desc=True).execute()
-        return res.data or []
-    except Exception:
+        supabase = get_client()
+        res = supabase.table("equipment").select("*").execute()
+        return res.data
+    except Exception as e:
+        print(f"Error fetching equipment: {e}")
         return []
 
-def insert_equipment(data: dict):
-    # デフォルトで is_active = True をセット
-    if "is_active" not in data:
-        data["is_active"] = True
-    return supabase.table("equipment").insert(data).execute()
-
-def update_equipment(eq_id: int, data: dict):
-    return supabase.table("equipment").update(data).eq("id", eq_id).execute()
-
-def delete_equipment(eq_id: int):
-    return supabase.table("equipment").delete().eq("id", eq_id).execute()
-
+# 抽出履歴の取得処理
 def get_drip_logs():
-    if not supabase: return []
     try:
-        res = supabase.table("drip_logs").select("*").order("created_at", desc=True).execute()
-        return res.data or []
-    except Exception:
+        supabase = get_client()
+        res = supabase.table("drip_logs").select("*").order("created_at", ascending=False).execute()
+        return res.data
+    except Exception as e:
+        print(f"Error fetching drip logs: {e}")
         return []
-
-def insert_drip_log(data: dict):
-    return supabase.table("drip_logs").insert(data).execute()
-
-def update_drip_log(log_id: int, data: dict):
-    return supabase.table("drip_logs").update(data).eq("id", log_id).execute()
-
-def delete_drip_log(log_id: int):
-    return supabase.table("drip_logs").delete().eq("id", log_id).execute()
