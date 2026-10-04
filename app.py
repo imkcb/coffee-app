@@ -31,22 +31,31 @@ if "water_per_cup" not in st.session_state:
 st.title("BARIS⚡太郎くん")
 tab1, tab2, tab3, tab4 = st.tabs(["☕ ドリップ", "🫘 豆管理", "🛠️ 器具管理", "📈 履歴"])
 
-# スマート値抽出用関数（辞書型や複数キー、リストのネスト構造に対応）
-def get_smart_val(data, keys, default="-"):
-    if not isinstance(data, dict):
-        return default
-    for k in keys:
-        if k in data and data[k] is not None:
-            v = data[k]
-            if isinstance(v, dict):
-                parts = []
-                for sub_k in ["target", "comandante_clicks", "grind_setting", "value", "name", "reason", "details", "clicks"]:
-                    if sub_k in v and v[sub_k]:
-                        parts.append(str(v[sub_k]))
-                return " / ".join(parts) if parts else str(v)
-            elif isinstance(v, (list, tuple)):
-                return "、".join([str(x) for x in v if x])
-            return str(v)
+# 全階層再帰検索関数（どんなに深いJSONネストでもキーを探し出す）
+def find_val(data, target_keys, default="-"):
+    if isinstance(data, dict):
+        # 1. 直下のキーを検索
+        for k in target_keys:
+            if k in data and data[k] is not None:
+                v = data[k]
+                if isinstance(v, (int, float, str)):
+                    return str(v)
+                elif isinstance(v, dict):
+                    parts = [str(val) for val in v.values() if val and not isinstance(val, (dict, list))]
+                    if parts:
+                        return " / ".join(parts)
+                elif isinstance(v, list):
+                    return "、".join([str(x) for x in v if x and not isinstance(x, (dict, list))])
+        # 2. 直下になければ子要素を深く探索
+        for v in data.values():
+            res = find_val(v, target_keys, default="")
+            if res:
+                return res
+    elif isinstance(data, list):
+        for item in data:
+            res = find_val(item, target_keys, default="")
+            if res:
+                return res
     return default
 
 # ==========================================
@@ -75,7 +84,6 @@ with tab1:
         key="drip_shop_choice"
     )
     
-    # 店舗に基づいて豆リストをフィルタリング
     if selected_shop != "すべて":
         filtered_beans = [b for b in beans_data if b.get("shop") == selected_shop]
     else:
@@ -118,7 +126,6 @@ with tab1:
     chosen_bean = next((b for b in beans_data if b.get("name") == bean_choice), {"name": bean_choice})
     chosen_bean_id = chosen_bean.get("id") if isinstance(chosen_bean, dict) else None
     
-    # 直近の抽出評価を自動検索
     past_feedback_text = "過去の評価なし"
     if chosen_bean_id and drip_logs_data:
         past_logs = [l for l in drip_logs_data if l.get("bean_id") == chosen_bean_id]
@@ -169,7 +176,7 @@ with tab1:
                     "coffee_type": selected_coffee_type, "water_per_cup": selected_water_per_cup
                 }
             else:
-                st.warning("⚠️️ 全てのAIモデルサーバーが混雑しています。1分ほど置いてから再度お試しください。")
+                st.warning("⚠️ 全てのAIモデルサーバーが混雑しています。1分ほど置いてから再度お試しください。")
                 with st.expander("🔍 エラー詳細"):
                     st.write(error_msg)
 
@@ -181,34 +188,46 @@ with tab1:
         st.success(f"レシピが完成しました！（{params.get('coffee_type', 'ホット')} / {params.get('water_per_cup', 300)}ml×{params.get('cup_count', 1)}杯）")
         
         st.subheader("✨ 使用器具指示")
-        st.write(f"- **ドリッパー**: {get_smart_val(recipe_data, ['selected_dripper', 'dripper', 'recommended_dripper'])}")
-        st.write(f"- **フィルター**: {get_smart_val(recipe_data, ['selected_filter', 'filter', 'recommended_filter'])}")
-        st.write(f"- **ミル・グラインダー**: {get_smart_val(recipe_data, ['selected_grinder', 'grinder', 'recommended_grinder'])}")
+        st.write(f"- **ドリッパー**: {find_val(recipe_data, ['selected_dripper', 'dripper', 'recommended_dripper'])}")
+        st.write(f"- **フィルター**: {find_val(recipe_data, ['selected_filter', 'filter', 'recommended_filter'])}")
+        st.write(f"- **ミル・グラインダー**: {find_val(recipe_data, ['selected_grinder', 'grinder', 'recommended_grinder'])}")
         
         st.divider()
-        st.write(f"**おすすめ粉量**: {get_smart_val(recipe_data, ['recommended_powder_weight', 'powder_weight', 'coffee_weight', 'coffee_grams', 'powder_g'])} g")
-        st.write(f"**お湯の温度**: {get_smart_val(recipe_data, ['water_temp', 'temperature', 'water_temperature', 'temp'])} ℃")
-        st.write(f"**蒸らし時間**: {get_smart_val(recipe_data, ['bloom_time', 'bloom', 'blooming_time', 'bloom_seconds'])} 秒")
-        st.write(f"**ミルのグラインド設定**: {get_smart_val(recipe_data, ['grind_setting', 'grind', 'grind_size'])}")
+        st.write(f"**おすすめ粉量**: {find_val(recipe_data, ['recommended_powder_weight', 'powder_weight', 'coffee_weight', 'coffee_grams', 'powder_g', 'grams'])} g")
+        st.write(f"**お湯の温度**: {find_val(recipe_data, ['water_temp', 'temperature', 'water_temperature', 'temp', 'celsius'])} ℃")
+        st.write(f"**蒸らし時間**: {find_val(recipe_data, ['bloom_time', 'bloom', 'blooming_time', 'bloom_seconds', 'seconds'])} 秒")
+        st.write(f"**ミルのグラインド設定**: {find_val(recipe_data, ['grind_setting', 'grind', 'grind_size', 'clicks'])}")
         
         st.markdown("### 📊 抽出ステップ手順")
-        steps = recipe_data.get('recipe_steps') or recipe_data.get('steps') or recipe_data.get('recipe') or []
+        # ステップデータの配列を全階層から探す
+        steps = []
+        if isinstance(recipe_data, dict):
+            for k in ['recipe_steps', 'steps', 'recipe', 'items', 'list']:
+                if k in recipe_data and isinstance(recipe_data[k], list):
+                    steps = recipe_data[k]
+                    break
+            if not steps:
+                for v in recipe_data.values():
+                    if isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict):
+                        steps = v
+                        break
+
         if steps and isinstance(steps, list):
             table_md = "| STEP | 時間 | 注ぎ量 | 累計湯量 | 流量 | 注ぎ方 | 目的 |\n"
             table_md += "| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
             for s in steps:
                 if isinstance(s, dict):
-                    step_num = get_smart_val(s, ['step_number', 'step', 'num', 'no', 'step_no'])
-                    time_t = get_smart_val(s, ['time_target', 'time', 'target_time', 'duration', 'time_sec', 'sec'])
-                    step_w = get_smart_val(s, ['step_water', 'water', 'amount', 'water_amount', 'pour_amount', 'pour_water'])
-                    total_w = get_smart_val(s, ['total_water', 'total', 'accumulated_water', 'cumulative_water', 'total_ml', 'accumulated'])
-                    flow = get_smart_val(s, ['flow_rate', 'flow', 'speed', 'flow_speed'])
-                    method = get_smart_val(s, ['pouring_method', 'method', 'pouring', 'technique', 'action'])
-                    purp = get_smart_val(s, ['purpose', 'reason', 'note', 'description', 'target', 'aim'])
+                    step_num = find_val(s, ['step_number', 'step', 'num', 'no', 'step_no'])
+                    time_t = find_val(s, ['time_target', 'time', 'target_time', 'duration', 'time_sec', 'sec'])
+                    step_w = find_val(s, ['step_water', 'water', 'amount', 'water_amount', 'pour_amount', 'pour_water'])
+                    total_w = find_val(s, ['total_water', 'total', 'accumulated_water', 'cumulative_water', 'total_ml', 'accumulated'])
+                    flow = find_val(s, ['flow_rate', 'flow', 'speed', 'flow_speed'])
+                    method = find_val(s, ['pouring_method', 'method', 'pouring', 'technique', 'action'])
+                    purp = find_val(s, ['purpose', 'reason', 'note', 'description', 'target', 'aim'])
                     table_md += f"| {step_num} | {time_t} | {step_w}ml | {total_w}ml | {flow} | {method} | {purp} |\n"
             st.markdown(table_md)
             
-        st.info(f"💡 ワンポイント: {get_smart_val(recipe_data, ['tasting_notes', 'advice', 'point', 'one_point', 'notes', 'reason'])}")
+        st.info(f"💡 ワンポイント: {find_val(recipe_data, ['tasting_notes', 'advice', 'point', 'one_point', 'notes', 'reason', 'comment'])}")
         
         with st.expander("🔍 生成された生のデータ（JSON）を確認"):
             st.json(recipe_data)
@@ -230,7 +249,7 @@ with tab1:
                     "flavor_profile": params.get("flavor_profile"),
                     "cup_count": params.get("cup_count"),
                     "roasted_date": params.get("roast_date") if params.get("roast_date") != "未指定" else None,
-                    "grind_setting": get_smart_val(recipe_data, ['grind_setting', 'grind', 'grind_size']),
+                    "grind_setting": find_val(recipe_data, ['grind_setting', 'grind', 'grind_size']),
                     "data": {
                         "bean_name": params.get("bean_name"), "recipe": recipe_data,
                         "rating": drip_rating, "taste_issues": drip_issues,
@@ -399,23 +418,28 @@ with tab4:
             log_water = data_payload.get("water_per_cup", 300)
             
             with st.expander(f"📅 {created_at} 🫘 {bean_name} [{log_type}/{log_water}ml] (★{curr_rating})"):
-                st.write(f"**推奨ドリッパー**: {get_smart_val(recipe, ['selected_dripper', 'dripper', 'recommended_dripper'])} | **粉量**: {get_smart_val(recipe, ['recommended_powder_weight', 'powder_weight', 'coffee_weight', 'powder_g'])} g | **湯温**: {get_smart_val(recipe, ['water_temp', 'temperature', 'temp'])} ℃")
+                st.write(f"**推奨ドリッパー**: {find_val(recipe, ['selected_dripper', 'dripper', 'recommended_dripper'])} | **粉量**: {find_val(recipe, ['recommended_powder_weight', 'powder_weight', 'coffee_weight', 'powder_g'])} g | **湯温**: {find_val(recipe, ['water_temp', 'temperature', 'temp'])} ℃")
                 
-                # 履歴でもステップを表形式で表示
-                steps = recipe.get("recipe_steps") or recipe.get("steps") or recipe.get("recipe") or []
+                steps = []
+                if isinstance(recipe, dict):
+                    for k in ['recipe_steps', 'steps', 'recipe']:
+                        if k in recipe and isinstance(recipe[k], list):
+                            steps = recipe[k]
+                            break
+
                 if steps and isinstance(steps, list):
                     st.markdown("**抽出ステップ**:")
                     table_md = "| STEP | 時間 | 注ぎ量 | 累計湯量 | 流量 | 注ぎ方 | 目的 |\n"
                     table_md += "| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
                     for s in steps:
                         if isinstance(s, dict):
-                            step_num = get_smart_val(s, ['step_number', 'step', 'num', 'no'])
-                            time_t = get_smart_val(s, ['time_target', 'time', 'target_time', 'duration', 'time_sec'])
-                            step_w = get_smart_val(s, ['step_water', 'water', 'amount', 'water_amount', 'pour_amount'])
-                            total_w = get_smart_val(s, ['total_water', 'total', 'accumulated_water', 'cumulative_water', 'total_ml'])
-                            flow = get_smart_val(s, ['flow_rate', 'flow', 'speed', 'flow_speed'])
-                            method = get_smart_val(s, ['pouring_method', 'method', 'pouring', 'technique'])
-                            purp = get_smart_val(s, ['purpose', 'reason', 'note', 'description'])
+                            step_num = find_val(s, ['step_number', 'step', 'num', 'no'])
+                            time_t = find_val(s, ['time_target', 'time', 'target_time', 'duration', 'time_sec'])
+                            step_w = find_val(s, ['step_water', 'water', 'amount', 'water_amount', 'pour_amount'])
+                            total_w = find_val(s, ['total_water', 'total', 'accumulated_water', 'cumulative_water', 'total_ml'])
+                            flow = find_val(s, ['flow_rate', 'flow', 'speed', 'flow_speed'])
+                            method = find_val(s, ['pouring_method', 'method', 'pouring', 'technique'])
+                            purp = find_val(s, ['purpose', 'reason', 'note', 'description'])
                             table_md += f"| {step_num} | {time_t} | {step_w}ml | {total_w}ml | {flow} | {method} | {purp} |\n"
                         else:
                             table_md += f"| {s} |\n"
