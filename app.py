@@ -29,16 +29,18 @@ if "water_per_cup" not in st.session_state:
 
 # 3. アプリタイトルと4タブ構成の定義
 st.title("BARIS⚡太郎くん")
-# --- 一時確認用デバッグコード ---
+# --- 生のエラー特定用デバッグコード ---
 st.warning("【デバッグ情報】")
-st.write("URL設定あり:", bool(os.getenv("SUPABASE_URL")))
-st.write("KEY設定あり:", bool(os.getenv("SUPABASE_KEY")))
+from supabase import create_client
 try:
-    test_data = db.get_beans()
-    st.write("取得データ件数:", len(test_data))
+    url = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_KEY")
+    client = create_client(url, key)
+    res = client.table("beans").select("*").execute()
+    st.success(f"Supabase直接接続成功！ 豆データ件数: {len(res.data)}")
 except Exception as e:
-    st.error(f"DBエラー詳細: {e}")
-# --------------------------------
+    st.error(f"Supabase直接接続エラー: {e}")
+# -------------------------------------
 tab1, tab2, tab3, tab4 = st.tabs(["☕ ドリップ", "🫘 豆管理", "🛠️ 器具管理", "📈 履歴"])
 
 # ==========================================
