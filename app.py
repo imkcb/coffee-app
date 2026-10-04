@@ -15,6 +15,10 @@ beans_data = db.get_beans()
 equipment_data = db.get_equipment()
 drip_logs_data = db.get_drip_logs()
 
+# ★ここを追加：履歴データを作成日時の新しい順（降順）に並び替える
+if drip_logs_data:
+    drip_logs_data = sorted(drip_logs_data, key=lambda x: str(x.get("created_at", "")), reverse=True)
+
 bean_names = [b.get("name") for b in beans_data if b.get("name")] if beans_data else [
     "エチオピア イルガチェフェ", "グアテマラ アンティグア", "ブラジル サントス"
 ]
