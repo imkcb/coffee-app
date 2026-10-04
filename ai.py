@@ -2,12 +2,45 @@ import os
 import requests
 import json
 
+# APIが返却すべきJSON構造を厳格に固定するスキーマ定義
+RESPONSE_SCHEMA = {
+    "type": "OBJECT",
+    "properties": {
+        "recipe_title": {"type": "STRING", "description": "レシピのタイトル"},
+        "dripper": {"type": "STRING", "description": "使用するドリッパー名"},
+        "filter": {"type": "STRING", "description": "使用するフィルター名"},
+        "grinder": {"type": "STRING", "description": "使用するミル・グラインダー名"},
+        "coffee_amount": {"type": "STRING", "description": "推奨粉量（例: 19g）"},
+        "water_temp": {"type": "STRING", "description": "お湯の温度（例: 92℃）"},
+        "grind_setting": {"type": "STRING", "description": "ミルのグラインド設定"},
+        "bloom_time": {"type": "STRING", "description": "蒸らし時間（例: 0:00 - 0:35）"},
+        "recipe_steps": {
+            "type": "ARRAY",
+            "items": {
+                "type": "OBJECT",
+                "properties": {
+                    "step_number": {"type": "INTEGER", "description": "ステップ番号"},
+                    "time": {"type": "STRING", "description": "時間（例: 0:00 - 0:35）"},
+                    "pour_amount": {"type": "STRING", "description": "注ぎ量（例: 59ml）"},
+                    "total_amount": {"type": "STRING", "description": "累計湯量（例: 59ml）"},
+                    "flow_rate": {"type": "STRING", "description": "湯量・流量指示"},
+                    "pouring_method": {"type": "STRING", "description": "注ぎ方"},
+                    "purpose": {"type": "STRING", "description": "目的"}
+                },
+                "required": ["step_number", "time", "pour_amount", "total_amount", "flow_rate", "pouring_method", "purpose"]
+            }
+        },
+        "notes": {"type": "STRING", "description": "ワンポイント解説・バリスタメモ"}
+    },
+    "required": ["recipe_title", "dripper", "filter", "grinder", "coffee_amount", "water_temp", "grind_setting", "bloom_time", "recipe_steps", "notes"]
+}
+
 def generate_recipe(prompt_text):
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         return None, "GEMINI_API_KEY が設定されていません。"
 
-    # 1. APIキーで現在利用可能なモデル一覧を自動検索
+    # APIキーで現在利用可能なモデル一覧を自動検索
     usable_models = []
     for api_version in ["v1beta", "v1"]:
         list_url = f"https://generativelanguage.googleapis.com/{api_version}/models?key={api_key}"
@@ -18,7 +51,6 @@ def generate_recipe(prompt_text):
                     if "generateContent" in m.get("supportedGenerationMethods", []):
                         m_name = m.get("name", "").replace("models/", "")
                         if m_name:
-                            # 処理の早いflashモデルを優先配置
                             if "flash" in m_name:
                                 usable_models.insert(0, (api_version, m_name))
                             else:
@@ -26,18 +58,19 @@ def generate_recipe(prompt_text):
         except Exception:
             pass
 
-    # 自動取得に失敗した場合のバックアップ
     if not usable_models:
         usable_models = [
             ("v1beta", "gemini-1.5-flash"),
             ("v1", "gemini-1.5-flash")
         ]
 
-    # 2. 検出された有効なモデルでレシピ生成を実行
     headers = {"Content-Type": "application/json"}
     payload = {
         "contents": [{"parts": [{"text": prompt_text}]}],
-        "generationConfig": {"response_mime_type": "application/json"}
+        "generationConfig": {
+            "response_mime_type": "application/json",
+            "response_schema": RESPONSE_SCHEMA
+        }
     }
 
     last_error = ""
