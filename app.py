@@ -284,8 +284,12 @@ with tab2:
                             st.rerun()
                     with col_btn2:
                         if st.button(f"🗑️ 削除", key=f"del_bean_{b_id}"):
-                            db.delete_bean(b_id)
-                            st.rerun()
+                            try:
+                                db.delete_bean(b_id)
+                                st.success("削除しました。")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"削除エラー: {e}")
                 else:
                     st.markdown("#### ✏️ 豆情報の編集")
                     ec1, ec2 = st.columns(2)
@@ -303,13 +307,17 @@ with tab2:
                         u_variety = st.text_input("品種", value=b.get("variety") or "", key=f"u_bvar_{b_id}")
 
                     if st.button("💾 更新を保存", key=f"btn_save_u_bean_{b_id}"):
-                        db.update_bean(b_id, {
-                            "name": u_name, "shop": u_shop, "roast_level": u_roast,
-                            "origin": u_origin, "flavor_notes": u_flavor, "farm": u_farm,
-                            "elevation": u_elevation, "process": u_process, "variety": u_variety
-                        })
-                        st.session_state[edit_key] = False
-                        st.rerun()
+                        try:
+                            db.update_bean(b_id, {
+                                "name": u_name, "shop": u_shop, "roast_level": u_roast,
+                                "origin": u_origin, "flavor_notes": u_flavor, "farm": u_farm,
+                                "elevation": u_elevation, "process": u_process, "variety": u_variety
+                            })
+                            st.session_state[edit_key] = False
+                            st.success("更新しました！")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"更新エラー: {e}")
     else:
         st.info("登録されている豆はまだありません。")
 
@@ -325,8 +333,12 @@ with tab3:
     
     if st.button("☕ 器具を登録する", key="btn_add_equipment"):
         if eq_name:
-            db.insert_equipment({"category": eq_category, "name": eq_name, "brand": eq_brand, "is_active": True})
-            st.rerun()
+            try:
+                db.insert_equipment({"category": eq_category, "name": eq_name, "brand": eq_brand, "is_active": True})
+                st.success(f"「{eq_name}」を登録しました！")
+                st.rerun()
+            except Exception as e:
+                st.error(f"登録エラー: {e}")
                     
     st.divider()
     st.subheader("登録済みの器具一覧")
@@ -336,19 +348,57 @@ with tab3:
             is_act = eq.get("is_active", True)
             if is_act is None: is_act = True
 
-            col_info, col_toggle, col_del = st.columns([3, 1.5, 1])
-            with col_info:
-                status_str = "🟢 利用可能" if is_act else "🔴 欠品中（AI対象外）"
-                st.markdown(f"・ **[{eq.get('category')}] {eq.get('name')}** （{status_str}）")
-            with col_toggle:
-                new_status = st.toggle("AI提案に含める", value=is_act, key=f"toggle_eq_{eq_id}")
-                if new_status != is_act:
-                    db.update_equipment(eq_id, {"is_active": new_status})
-                    st.rerun()
-            with col_del:
-                if st.button("🗑️ 削除", key=f"del_eq_{eq_id}"):
-                    db.delete_equipment(eq_id)
-                    st.rerun()
+            edit_eq_key = f"edit_eq_mode_{eq_id}"
+            if edit_eq_key not in st.session_state: st.session_state[edit_eq_key] = False
+
+            if not st.session_state[edit_eq_key]:
+                col_info, col_toggle, col_edit, col_del = st.columns([3, 1.5, 1, 1])
+                with col_info:
+                    status_str = "🟢 利用可能" if is_act else "🔴 欠品中（AI対象外）"
+                    brand_str = f"（{eq.get('brand')}）" if eq.get('brand') else ""
+                    st.markdown(f"・ **[{eq.get('category')}] {eq.get('name')}** {brand_str} - {status_str}")
+                with col_toggle:
+                    new_status = st.toggle("AI提案に含める", value=is_act, key=f"toggle_eq_{eq_id}")
+                    if new_status != is_act:
+                        db.update_equipment(eq_id, {"is_active": new_status})
+                        st.rerun()
+                with col_edit:
+                    if st.button("✏️ 編集", key=f"btn_edit_mode_eq_{eq_id}"):
+                        st.session_state[edit_eq_key] = True
+                        st.rerun()
+                with col_del:
+                    if st.button("🗑️ 削除", key=f"del_eq_{eq_id}"):
+                        try:
+                            db.delete_equipment(eq_id)
+                            st.success("削除しました。")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"削除エラー: {e}")
+            else:
+                st.markdown("#### ✏️ 器具情報の編集")
+                eq_cat_opts = ["ドリッパー", "ミル（グラインダー）", "フィルター", "サーバー", "その他"]
+                u_eq_cat = st.selectbox("カテゴリ", eq_cat_opts, index=eq_cat_opts.index(eq.get("category")) if eq.get("category") in eq_cat_opts else 0, key=f"u_eqcat_{eq_id}")
+                u_eq_name = st.text_input("器具の名前", value=eq.get("name") or "", key=f"u_eqname_{eq_id}")
+                u_eq_brand = st.text_input("ブランド / メーカー", value=eq.get("brand") or "", key=f"u_eqbrand_{eq_id}")
+
+                col_u_save, col_u_cancel = st.columns([1, 1])
+                with col_u_save:
+                    if st.button("💾 更新を保存", key=f"btn_save_u_eq_{eq_id}"):
+                        try:
+                            db.update_equipment(eq_id, {
+                                "category": u_eq_cat,
+                                "name": u_eq_name,
+                                "brand": u_eq_brand
+                            })
+                            st.session_state[edit_eq_key] = False
+                            st.success("器具情報を更新しました！")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"更新エラー: {e}")
+                with col_u_cancel:
+                    if st.button("キャンセル", key=f"btn_cancel_u_eq_{eq_id}"):
+                        st.session_state[edit_eq_key] = False
+                        st.rerun()
     else:
         st.info("登録されている器具はまだありません。")
 
@@ -372,7 +422,6 @@ with tab4:
             curr_goals = [raw_goals] if isinstance(raw_goals, str) else raw_goals
             curr_comment = data_payload.get("comment", "")
             
-            # 安全な初期値フィルタリング（選択肢に存在する文字だけに制限）
             safe_issues = [x for x in curr_issues if x in prompts.TASTE_ISSUES_OPTIONS]
             safe_goals = [x for x in curr_goals if x in prompts.TARGET_GOALS_OPTIONS]
 
@@ -402,17 +451,24 @@ with tab4:
                     new_comment = st.text_input("自由コメント", value=curr_comment, key=f"hist_comment_{log_id}")
                 
                 if st.button("⭐ 評価を更新する", key=f"btn_hist_rate_{log_id}"):
-                    updated_payload = data_payload
-                    updated_payload["rating"] = new_rating
-                    updated_payload["taste_issues"] = new_issues
-                    updated_payload["target_goals"] = new_goals
-                    updated_payload["comment"] = new_comment
-                    db.update_drip_log(log_id, {"data": updated_payload})
-                    st.success("評価を更新しました。")
-                    st.rerun()
+                    try:
+                        updated_payload = data_payload
+                        updated_payload["rating"] = new_rating
+                        updated_payload["taste_issues"] = new_issues
+                        updated_payload["target_goals"] = new_goals
+                        updated_payload["comment"] = new_comment
+                        db.update_drip_log(log_id, {"data": updated_payload})
+                        st.success("評価を更新しました。")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"更新エラー: {e}")
 
                 if st.button("🗑 この履歴を削除", key=f"del_log_{log_id}"):
-                    db.delete_drip_log(log_id)
-                    st.rerun()
+                    try:
+                        db.delete_drip_log(log_id)
+                        st.success("削除しました。")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"削除エラー: {e}")
     else:
         st.info("保存された抽出履歴はまだありません。")
