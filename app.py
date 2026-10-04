@@ -159,39 +159,46 @@ with tab1:
         recipe_data = st.session_state["current_recipe"]
         params = st.session_state["current_drip_params"]
         
+        # 表記揺れに対応した安全な値取得関数
+        def g(data, *keys, default="指定なし"):
+            for k in keys:
+                if isinstance(data, dict) and data.get(k) is not None:
+                    return data.get(k)
+            return default
+
         st.divider()
         st.success(f"レシピが完成しました！（{params.get('coffee_type', 'ホット')} / {params.get('water_per_cup', 300)}ml×{params.get('cup_count', 1)}杯）")
         
         st.subheader("✨ 使用器具指示")
-        st.write(f"- **ドリッパー**: {recipe_data.get('selected_dripper', '指定なし')}")
-        st.write(f"- **フィルター**: {recipe_data.get('selected_filter', '指定なし')}")
-        st.write(f"- **ミル・グラインダー**: {recipe_data.get('selected_grinder', '指定なし')}")
+        st.write(f"- **ドリッパー**: {g(recipe_data, 'selected_dripper', 'dripper')}")
+        st.write(f"- **フィルター**: {g(recipe_data, 'selected_filter', 'filter')}")
+        st.write(f"- **ミル・グラインダー**: {g(recipe_data, 'selected_grinder', 'grinder')}")
         
         st.divider()
-        st.write(f"**おすすめ粉量**: {recipe_data.get('recommended_powder_weight')} g")
-        st.write(f"**お湯の温度**: {recipe_data.get('water_temp')} ℃")
-        st.write(f"**蒸らし時間**: {recipe_data.get('bloom_time')} 秒")
-        st.write(f"**ミルのグラインド設定**: {recipe_data.get('grind_setting')}")
+        st.write(f"**おすすめ粉量**: {g(recipe_data, 'recommended_powder_weight', 'powder_weight', 'coffee_weight', default='-')} g")
+        st.write(f"**お湯の温度**: {g(recipe_data, 'water_temp', 'temperature', default='-')} ℃")
+        st.write(f"**蒸らし時間**: {g(recipe_data, 'bloom_time', 'bloom', default='-')} 秒")
+        st.write(f"**ミルのグラインド設定**: {g(recipe_data, 'grind_setting', 'grind', default='-')}")
         
         st.markdown("### 📊 抽出ステップ手順")
-        steps = recipe_data.get('recipe_steps', [])
+        steps = recipe_data.get('recipe_steps') or recipe_data.get('steps') or []
         if steps:
             table_md = "| STEP | 時間 | 注ぎ量 | 累計湯量 | 流量 | 注ぎ方 | 目的 |\n"
             table_md += "| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
             for s in steps:
-                step_num = s.get('step_number') if isinstance(s, dict) else s.step_number
-                time_t = s.get('time_target') if isinstance(s, dict) else s.time_target
-                step_w = s.get('step_water') if isinstance(s, dict) else s.step_water
-                total_w = s.get('total_water') if isinstance(s, dict) else s.total_water
-                flow = s.get('flow_rate') if isinstance(s, dict) else s.flow_rate
-                method = s.get('pouring_method') if isinstance(s, dict) else s.pouring_method
-                purp = s.get('purpose') if isinstance(s, dict) else s.purpose
-                
-                table_md += f"| {step_num} | {time_t} | {step_w}ml | {total_w}ml | {flow} | {method} | {purp} |\n"
+                if isinstance(s, dict):
+                    step_num = g(s, 'step_number', 'step', 'num', default='-')
+                    time_t = g(s, 'time_target', 'time', 'target_time', default='-')
+                    step_w = g(s, 'step_water', 'water', 'amount', default='-')
+                    total_w = g(s, 'total_water', 'total', 'accumulated_water', default='-')
+                    flow = g(s, 'flow_rate', 'flow', default='-')
+                    method = g(s, 'pouring_method', 'method', 'pouring', default='-')
+                    purp = g(s, 'purpose', 'note', default='-')
+                    table_md += f"| {step_num} | {time_t} | {step_w}ml | {total_w}ml | {flow} | {method} | {purp} |\n"
             
             st.markdown(table_md)
             
-        st.info(f"💡 ワンポイント: {recipe_data.get('tasting_notes')}")
+        st.info(f"💡 ワンポイント: {g(recipe_data, 'tasting_notes', 'advice', 'point', 'one_point', default='-')}")
         
         st.divider()
         st.subheader("📝 今回の抽出評価・フィードバック（任意）")
