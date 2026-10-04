@@ -15,7 +15,7 @@ beans_data = db.get_beans()
 equipment_data = db.get_equipment()
 drip_logs_data = db.get_drip_logs()
 
-# ★ここを追加：履歴データを作成日時の新しい順（降順）に並び替える
+# 履歴データを日付の新しい順（降順）に並び替え
 if drip_logs_data:
     drip_logs_data = sorted(drip_logs_data, key=lambda x: str(x.get("created_at", "")), reverse=True)
 
@@ -34,6 +34,52 @@ if "water_per_cup" not in st.session_state:
 # 3. アプリタイトルと4タブ構成の定義
 st.title("BARIS⚡太郎くん")
 tab1, tab2, tab3, tab4 = st.tabs(["☕ ドリップ", "🫘 豆管理", "🛠️ 器具管理", "📈 履歴"])
+
+# ネスト構造対応の統合抽出ヘルパー
+def extract_field(data, path_list, alt_keys=None, default="-"):
+    if not data:
+        return default
+        
+    if isinstance(data, list) and len(data) > 0:
+        data = data[0]
+
+    curr = data
+    found = True
+    for p in path_list:
+        if isinstance(curr, dict) and p in curr and curr[p] is not None:
+            curr = curr[p]
+        else:
+            found = False
+            break
+            
+    if found and curr is not None and not isinstance(curr, (dict, list)):
+        return str(curr)
+
+    if alt_keys and isinstance(data, dict):
+        for k in alt_keys:
+            if k in data and data[k] is not None:
+                v = data[k]
+                if not isinstance(v, (dict, list)):
+                    return str(v)
+
+    if alt_keys:
+        def deep_search(d, keys):
+            if isinstance(d, dict):
+                for k in keys:
+                    if k in d and d[k] is not None and not isinstance(d[k], (dict, list)):
+                        return str(d[k])
+                for v in d.values():
+                    res = deep_search(v, keys)
+                    if res: return res
+            elif isinstance(d, list):
+                for item in d:
+                    res = deep_search(item, keys)
+                    if res: return res
+            return None
+        res = deep_search(data, alt_keys)
+        if res: return res
+
+    return default
 
 # ==========================================
 # タブ1: ドリップ画面
@@ -153,68 +199,63 @@ with tab1:
                     st.write(error_msg)
 
     if "current_recipe" in st.session_state and st.session_state["current_recipe"]:
-        recipe_data = st.session_state["current_recipe"]
+        raw_recipe = st.session_state["current_recipe"]
         params = st.session_state["current_drip_params"]
 
-        # ★最外枠がリストの場合の解凍処理
-        if isinstance(recipe_data, list) and len(recipe_data) > 0:
-            recipe_data = recipe_data[0]
-
-        # 値の安全取得ヘルパー
-        def get_v(data, keys, default="-"):
-            if not isinstance(data, dict):
-                return default
-            for k in keys:
-                if k in data and data[k] is not None:
-                    return str(data[k])
-            return default
+        recipe_obj = raw_recipe[0] if isinstance(raw_recipe, list) and len(raw_recipe) > 0 else raw_recipe
 
         st.divider()
         st.success(f"レシピが完成しました！（{params.get('coffee_type', 'ホット')} / {params.get('water_per_cup', 300)}ml×{params.get('cup_count', 1)}杯）")
         
+        title_val = extract_field(recipe_obj, ['recipe', 'title'], ['title', 'recipe_name'], default="")
+        if title_val:
+            st.markdown(f"### 📖 {title_val}")
+
         st.subheader("✨ 使用器具指示")
-        st.write(f"- **ドリッパー**: {get_v(recipe_data, ['used_dripper', 'selected_dripper', 'dripper'])}")
-        st.write(f"- **フィルター**: {get_v(recipe_data, ['used_filter', 'selected_filter', 'filter'])}")
-        st.write(f"- **ミル・グラインダー**: {get_v(recipe_data, ['used_grinder', 'selected_grinder', 'grinder'])}")
+        st.write(f"- **ドリッパー**: {extract_field(recipe_obj, ['recipe', 'selected_equipment', 'dripper'], ['used_dripper', 'selected_dripper', 'dripper'])}")
+        st.write(f"- **フィルター**: {extract_field(recipe_obj, ['recipe', 'selected_equipment', 'filter'], ['used_filter', 'selected_filter', 'filter'])}")
+        st.write(f"- **ミル・グラインダー**: {extract_field(recipe_obj, ['recipe', 'selected_equipment', 'grinder'], ['used_grinder', 'selected_grinder', 'grinder'])}")
         
         st.divider()
-        st.write(f"**おすすめ粉量**: {get_v(recipe_data, ['coffee_bean_weight', 'recommended_powder_weight', 'powder_weight'])} g")
-        st.write(f"**お湯の温度**: {get_v(recipe_data, ['water_temp', 'temperature'])} ℃")
+        st.write(f"**おすすめ粉量**: {extract_field(recipe_obj, ['recipe', 'parameters', 'bean_weight'], ['coffee_bean_weight', 'recommended_powder_weight', 'bean_weight'])}")
+        st.write(f"**お湯の温度**: {extract_field(recipe_obj, ['recipe', 'parameters', 'water_temperature'], ['water_temp', 'water_temperature', 'temperature'])}")
+        st.write(f"**ミルのグラインド設定**: {extract_field(recipe_obj, ['recipe', 'selected_equipment', 'grind_setting'], ['grind_setting', 'grind'])}")
         
-        # ステップ情報取得
-        steps_list = recipe_data.get('recipe_steps') or recipe_data.get('steps') or []
+        steps_list = []
+        if isinstance(recipe_obj, dict):
+            if 'recipe' in recipe_obj and isinstance(recipe_obj['recipe'], dict):
+                steps_list = recipe_obj['recipe'].get('recipe_steps') or []
+            if not steps_list:
+                steps_list = recipe_obj.get('recipe_steps') or recipe_obj.get('steps') or []
+
         bloom_val = "-"
         if isinstance(steps_list, list) and len(steps_list) > 0:
             first_s = steps_list[0]
             if isinstance(first_s, dict):
-                bloom_val = first_s.get('end_time') or first_s.get('duration') or "-"
-        
-        st.write(f"**蒸らし時間**: {bloom_val} 秒")
-        st.write(f"**ミルのグラインド設定**: {get_v(recipe_data, ['grind_setting', 'grind'])}")
-        
+                bloom_val = first_s.get('time_range') or first_s.get('end_time') or first_s.get('duration') or "-"
+        st.write(f"**蒸らし時間**: {bloom_val}")
+
         st.markdown("### 📊 抽出ステップ手順")
         if steps_list and isinstance(steps_list, list):
             table_md = "| STEP | 時間 | 注ぎ量 | 累計湯量 | 流量 | 注ぎ方 | 目的 |\n"
             table_md += "| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
             for s in steps_list:
                 if isinstance(s, dict):
-                    step_num = get_v(s, ['step_number', 'step', 'num'])
-                    s_time = s.get('start_time')
-                    e_time = s.get('end_time')
-                    time_t = f"{s_time} ~ {e_time}" if (s_time and e_time) else get_v(s, ['time_target', 'time'])
-                    step_w = get_v(s, ['pour_weight', 'step_water', 'water'])
-                    total_w = get_v(s, ['accumulated_weight', 'total_water', 'total'])
-                    flow = get_v(s, ['flow_rate_description', 'flow_rate', 'flow'])
-                    method = get_v(s, ['pouring_method', 'method', 'pouring'])
-                    purp = get_v(s, ['purpose', 'aim', 'reason'], default="抽出")
+                    step_num = extract_field(s, ['step'], ['step_number'])
+                    time_t = extract_field(s, ['time_range'], ['time_target', 'time'])
+                    if time_t == "-" and s.get('start_time') and s.get('end_time'):
+                        time_t = f"{s.get('start_time')} ~ {s.get('end_time')}"
+                    step_w = extract_field(s, ['pour_amount'], ['pour_weight', 'step_water'])
+                    total_w = extract_field(s, ['total_amount'], ['accumulated_weight', 'total_water'])
+                    flow = extract_field(s, ['flow_rate'], ['flow_rate_description'])
+                    method = extract_field(s, ['pouring_style'], ['pouring_method'])
+                    purp = extract_field(s, ['purpose'], ['aim', 'reason'], default="抽出")
 
-                    table_md += f"| {step_num} | {time_t} | {step_w}ml | {total_w}ml | {flow} | {method} | {purp} |\n"
+                    table_md += f"| {step_num} | {time_t} | {step_w} | {total_w} | {flow} | {method} | {purp} |\n"
             st.markdown(table_md)
-            
-        st.info(f"💡 レシピ名: {get_v(recipe_data, ['recipe_name', 'tasting_notes', 'advice'])}")
-        
+
         with st.expander("🔍 生成された生のデータ（JSON）を確認"):
-            st.json(recipe_data)
+            st.json(recipe_obj)
 
         st.divider()
         st.subheader("📝 今回の抽出評価・フィードバック（任意）")
@@ -233,9 +274,9 @@ with tab1:
                     "flavor_profile": params.get("flavor_profile"),
                     "cup_count": params.get("cup_count"),
                     "roasted_date": params.get("roast_date") if params.get("roast_date") != "未指定" else None,
-                    "grind_setting": get_v(recipe_data, ['grind_setting', 'grind']),
+                    "grind_setting": extract_field(recipe_obj, ['recipe', 'selected_equipment', 'grind_setting'], ['grind_setting']),
                     "data": {
-                        "bean_name": params.get("bean_name"), "recipe": recipe_data,
+                        "bean_name": params.get("bean_name"), "recipe": recipe_obj,
                         "rating": drip_rating, "taste_issues": drip_issues,
                         "target_goals": drip_goals, "comment": drip_comment,
                         "coffee_type": params.get("coffee_type"), "water_per_cup": params.get("water_per_cup")
@@ -389,8 +430,7 @@ with tab4:
             bean_name = data_payload.get("bean_name") or log.get("bean_name") or "不明な豆"
             recipe = data_payload.get("recipe") or {}
             
-            if isinstance(recipe, list) and len(recipe) > 0:
-                recipe = recipe[0]
+            log_recipe = recipe[0] if isinstance(recipe, list) and len(recipe) > 0 else recipe
 
             curr_rating = data_payload.get("rating", 3)
             raw_issues = data_payload.get("taste_issues") or data_payload.get("taste_issue") or ["問題なし（バランス良好）"]
@@ -401,33 +441,37 @@ with tab4:
             
             log_type = data_payload.get("coffee_type", "ホット")
             log_water = data_payload.get("water_per_cup", 300)
-            
-            def get_v_hist(d, keys):
-                if isinstance(d, dict):
-                    for k in keys:
-                        if k in d and d[k]: return str(d[k])
-                return "-"
+
+            d_val = extract_field(log_recipe, ['recipe', 'selected_equipment', 'dripper'], ['used_dripper', 'selected_dripper', 'dripper'])
+            w_val = extract_field(log_recipe, ['recipe', 'parameters', 'bean_weight'], ['coffee_bean_weight', 'recommended_powder_weight'])
+            t_val = extract_field(log_recipe, ['recipe', 'parameters', 'water_temperature'], ['water_temp', 'temperature'])
 
             with st.expander(f"📅 {created_at} 🫘 {bean_name} [{log_type}/{log_water}ml] (★{curr_rating})"):
-                st.write(f"**推奨ドリッパー**: {get_v_hist(recipe, ['used_dripper', 'selected_dripper', 'dripper'])} | **粉量**: {get_v_hist(recipe, ['coffee_bean_weight', 'recommended_powder_weight'])} g | **湯温**: {get_v_hist(recipe, ['water_temp', 'temperature'])} ℃")
+                st.write(f"**推奨ドリッパー**: {d_val} | **粉量**: {w_val} | **湯温**: {t_val}")
                 
-                steps = recipe.get("recipe_steps") or recipe.get("steps") or []
-                if steps and isinstance(steps, list):
+                steps_list = []
+                if isinstance(log_recipe, dict):
+                    if 'recipe' in log_recipe and isinstance(log_recipe['recipe'], dict):
+                        steps_list = log_recipe['recipe'].get('recipe_steps') or []
+                    if not steps_list:
+                        steps_list = log_recipe.get('recipe_steps') or log_recipe.get('steps') or []
+
+                if steps_list and isinstance(steps_list, list):
                     st.markdown("**抽出ステップ**:")
                     table_md = "| STEP | 時間 | 注ぎ量 | 累計湯量 | 流量 | 注ぎ方 | 目的 |\n"
                     table_md += "| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
-                    for s in steps:
+                    for s in steps_list:
                         if isinstance(s, dict):
-                            step_num = get_v_hist(s, ['step_number', 'step'])
-                            s_time = s.get('start_time')
-                            e_time = s.get('end_time')
-                            time_t = f"{s_time} ~ {e_time}" if (s_time and e_time) else get_v_hist(s, ['time_target', 'time'])
-                            step_w = get_v_hist(s, ['pour_weight', 'step_water'])
-                            total_w = get_v_hist(s, ['accumulated_weight', 'total_water'])
-                            flow = get_v_hist(s, ['flow_rate_description', 'flow_rate'])
-                            method = get_v_hist(s, ['pouring_method', 'method'])
-                            purp = get_v_hist(s, ['purpose', 'aim'])
-                            table_md += f"| {step_num} | {time_t} | {step_w}ml | {total_w}ml | {flow} | {method} | {purp} |\n"
+                            step_num = extract_field(s, ['step'], ['step_number'])
+                            time_t = extract_field(s, ['time_range'], ['time_target', 'time'])
+                            if time_t == "-" and s.get('start_time') and s.get('end_time'):
+                                time_t = f"{s.get('start_time')} ~ {s.get('end_time')}"
+                            step_w = extract_field(s, ['pour_amount'], ['pour_weight', 'step_water'])
+                            total_w = extract_field(s, ['total_amount'], ['accumulated_weight', 'total_water'])
+                            flow = extract_field(s, ['flow_rate'], ['flow_rate_description'])
+                            method = extract_field(s, ['pouring_style'], ['pouring_method'])
+                            purp = extract_field(s, ['purpose'], ['aim', 'reason'], default="抽出")
+                            table_md += f"| {step_num} | {time_t} | {step_w} | {total_w} | {flow} | {method} | {purp} |\n"
                     st.markdown(table_md)
                 
                 st.divider()
