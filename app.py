@@ -81,7 +81,7 @@ with tab1:
         key="drip_flavor_profile"
     )
     
-    with st.expander("⚙️️ 細かい設定（量・杯数・焙煎日）", expanded=True):
+    with st.expander("⚙️ 細かい設定（量・杯数・焙煎日）", expanded=True):
         col_sub1, col_sub2 = st.columns(2)
         with col_sub1:
             selected_water_per_cup = st.number_input(
@@ -169,6 +169,11 @@ with tab1:
         st.divider()
         st.write(f"**おすすめ粉量**: {recipe.get('coffee_amount', '-')}")
         st.write(f"**お湯の温度**: {recipe.get('water_temp', '-')}")
+        
+        ice_val = recipe.get('ice_amount', 'なし')
+        if ice_val and ice_val != 'なし' and ice_val != '-':
+            st.write(f"**準備する氷（サーバー内）**: 🧊 {ice_val}")
+
         st.write(f"**ミルのグラインド設定**: {recipe.get('grind_setting', '-')}")
         st.write(f"**蒸らし時間**: {recipe.get('bloom_time', '-')}")
 

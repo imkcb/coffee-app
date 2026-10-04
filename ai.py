@@ -11,18 +11,19 @@ RESPONSE_SCHEMA = {
         "filter": {"type": "STRING", "description": "使用するフィルター名"},
         "grinder": {"type": "STRING", "description": "使用するミル・グラインダー名"},
         "coffee_amount": {"type": "STRING", "description": "推奨粉量（例: 19g）"},
-        "water_temp": {"type": "STRING", "description": "お湯の温度（例: 92℃）"},
+        "water_temp": {"type": "STRING", "description": "お湯の温度（例: 94℃）"},
+        "ice_amount": {"type": "STRING", "description": "アイス抽出時にサーバーへ事前に用意する氷の量（例: 120g、ホットの場合は なし）"},
         "grind_setting": {"type": "STRING", "description": "ミルのグラインド設定"},
-        "bloom_time": {"type": "STRING", "description": "蒸らし時間（例: 0:00 - 0:35）"},
+        "bloom_time": {"type": "STRING", "description": "蒸らし時間（例: 0:00 - 0:40）"},
         "recipe_steps": {
             "type": "ARRAY",
             "items": {
                 "type": "OBJECT",
                 "properties": {
                     "step_number": {"type": "INTEGER", "description": "ステップ番号"},
-                    "time": {"type": "STRING", "description": "時間（例: 0:00 - 0:35）"},
-                    "pour_amount": {"type": "STRING", "description": "注ぎ量（例: 59ml）"},
-                    "total_amount": {"type": "STRING", "description": "累計湯量（例: 59ml）"},
+                    "time": {"type": "STRING", "description": "時間（例: 0:00 - 0:40）"},
+                    "pour_amount": {"type": "STRING", "description": "注ぎ量（例: 47ml）"},
+                    "total_amount": {"type": "STRING", "description": "累計湯量（例: 47ml）"},
                     "flow_rate": {"type": "STRING", "description": "湯量・流量指示"},
                     "pouring_method": {"type": "STRING", "description": "注ぎ方"},
                     "purpose": {"type": "STRING", "description": "目的"}
@@ -30,9 +31,9 @@ RESPONSE_SCHEMA = {
                 "required": ["step_number", "time", "pour_amount", "total_amount", "flow_rate", "pouring_method", "purpose"]
             }
         },
-        "notes": {"type": "STRING", "description": "ワンポイント解説・バリスタメモ"}
+        "notes": {"type": "STRING", "description": "ワンポイント解説（急冷式の場合は氷で解凍して指定総量になる旨を記載）"}
     },
-    "required": ["recipe_title", "dripper", "filter", "grinder", "coffee_amount", "water_temp", "grind_setting", "bloom_time", "recipe_steps", "notes"]
+    "required": ["recipe_title", "dripper", "filter", "grinder", "coffee_amount", "water_temp", "ice_amount", "grind_setting", "bloom_time", "recipe_steps", "notes"]
 }
 
 def generate_recipe(prompt_text):
@@ -40,7 +41,6 @@ def generate_recipe(prompt_text):
     if not api_key:
         return None, "GEMINI_API_KEY が設定されていません。"
 
-    # APIキーで現在利用可能なモデル一覧を自動検索
     usable_models = []
     for api_version in ["v1beta", "v1"]:
         list_url = f"https://generativelanguage.googleapis.com/{api_version}/models?key={api_key}"
