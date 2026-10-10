@@ -61,7 +61,6 @@ def render():
     user_session_id = get_session_id()
     theme_mode = st.session_state.get("theme_mode", "DARK")
 
-    # テーマに応じたステップカードのカラーリング動的切り替え
     if theme_mode == "LIGHT":
         accent_color = "#008A43"
         card_bg = "#EBEBEF"
@@ -137,14 +136,16 @@ def render():
     st.markdown("#### 1. TYPE")
     type_col1, type_col2 = st.columns(2)
     with type_col1:
-        if st.button("HOT", use_container_width=True, type="primary" if st.session_state["sel_type"] == "HOT" and st.session_state["wizard_step"] > 1 else "secondary"):
+        is_type_hot = (st.session_state["sel_type"] == "HOT")
+        if st.button("HOT", key="btn_type_hot", use_container_width=True, type="primary" if is_type_hot else "secondary"):
             st.session_state["sel_type"] = "HOT"
             if st.session_state["wizard_step"] == 1:
                 st.session_state["wizard_step"] = 2
             st.session_state["scroll_target"] = "step-2"
             st.rerun()
     with type_col2:
-        if st.button("ICED", use_container_width=True, type="primary" if st.session_state["sel_type"] == "ICED" and st.session_state["wizard_step"] > 1 else "secondary"):
+        is_type_iced = (st.session_state["sel_type"] == "ICED")
+        if st.button("ICED", key="btn_type_iced", use_container_width=True, type="primary" if is_type_iced else "secondary"):
             st.session_state["sel_type"] = "ICED"
             if st.session_state["wizard_step"] == 1:
                 st.session_state["wizard_step"] = 2
@@ -163,7 +164,7 @@ def render():
         for idx, shop_item in enumerate(shop_options):
             col_target = shop_cols[idx % len(shop_cols)]
             with col_target:
-                is_selected = (st.session_state["sel_shop"] == shop_item) and (st.session_state["wizard_step"] > 2)
+                is_selected = (st.session_state["sel_shop"] == shop_item)
                 if st.button(shop_item, key=f"btn_shop_{shop_item}", use_container_width=True, type="primary" if is_selected else "secondary"):
                     st.session_state["sel_shop"] = shop_item
                     if st.session_state["wizard_step"] == 2:
@@ -182,7 +183,7 @@ def render():
             r_cols = st.columns(3)
             for idx, r_lvl in enumerate(roast_levels):
                 with r_cols[idx]:
-                    is_selected = (st.session_state["sel_roast_level"] == r_lvl) and (st.session_state["wizard_step"] > 3)
+                    is_selected = (st.session_state["sel_roast_level"] == r_lvl)
                     if st.button(r_lvl, key=f"btn_roast_{r_lvl}", use_container_width=True, type="primary" if is_selected else "secondary"):
                         st.session_state["sel_roast_level"] = r_lvl
                         st.session_state["sel_bean"] = f"Custom Bean ({r_lvl})"
@@ -207,7 +208,7 @@ def render():
             for idx, b_name in enumerate(filtered_bean_names):
                 col_target = bean_cols[idx % len(bean_cols)]
                 with col_target:
-                    is_selected = (st.session_state["sel_bean"] == b_name) and (st.session_state["wizard_step"] > 3)
+                    is_selected = (st.session_state["sel_bean"] == b_name)
                     if st.button(b_name, key=f"btn_bean_{b_name}", use_container_width=True, type="primary" if is_selected else "secondary"):
                         st.session_state["sel_bean"] = b_name
                         if st.session_state["wizard_step"] == 3:
@@ -224,7 +225,7 @@ def render():
         flv_cols = st.columns(3)
         for idx, flv in enumerate(flavors):
             with flv_cols[idx]:
-                is_selected = (st.session_state["sel_flavor"] == flv) and (st.session_state["wizard_step"] > 4)
+                is_selected = (st.session_state["sel_flavor"] == flv)
                 if st.button(flv, key=f"btn_flv_{flv}", use_container_width=True, type="primary" if is_selected else "secondary"):
                     st.session_state["sel_flavor"] = flv
                     if st.session_state["wizard_step"] == 4:
@@ -381,7 +382,7 @@ def render():
             st.metric("GRIND", recipe.get('grind_setting', '-'))
             st.metric("BLOOM", formatted_bloom)
 
-        # GEAR 表示 (常にオープン & テーマ対応)
+        # GEAR 表示
         st.markdown("#### GEAR")
         st.markdown(
             f"""
@@ -398,19 +399,24 @@ def render():
         if ice_val and ice_val != 'なし' and ice_val != '-':
             st.info(f"PRE-ICE: {ice_val}")
 
+        # --- STEPS 表示（改行＆フォントサイズ変更） ---
         st.markdown("### STEPS")
         steps = recipe.get('recipe_steps', [])
         if steps and isinstance(steps, list):
             for s in steps:
                 if isinstance(s, dict):
                     step_time = format_step_time(s.get('time', '-'))
+                    purpose_text = s.get('purpose', '-')
                     st.markdown(
                         f"""
                         <div style="background-color: {card_bg}; padding: 12px 16px; border: 1px solid {card_border}; border-left: 4px solid {accent_color}; margin-bottom: 12px; border-radius: 4px;">
-                            <div style="font-size: 1.0em; font-weight: bold; color: {main_txt};">
-                                STEP {s.get('step_number', '-')}: {s.get('purpose', '-')}
+                            <div style="font-size: 1.1rem; font-weight: 600; color: {main_txt}; margin-bottom: 2px;">
+                                STEP {s.get('step_number', '-')}
                             </div>
-                            <div style="font-size: 0.9em; font-weight: bold; color: {accent_color}; margin-top: 2px;">
+                            <div style="font-size: 1.0rem; font-weight: bold; color: {accent_color}; margin-bottom: 6px;">
+                                {purpose_text}
+                            </div>
+                            <div style="font-size: 0.9em; font-weight: bold; color: {sub_txt}; margin-top: 2px;">
                                 {step_time}
                             </div>
                             <div style="margin-top: 8px; font-size: 0.9em; color: {main_txt};">
