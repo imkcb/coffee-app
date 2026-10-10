@@ -18,7 +18,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. ELEKTRON-INSPIRED MONOCHROME CSS (視認性最優先・過剰な枠線とドットフォントの適用範囲制限)
+# 2. ELEKTRON-INSPIRED MONOCHROME CSS (表示崩れ防止・シンプル化)
 elektron_css = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
@@ -50,29 +50,15 @@ h4, h5, h6 {
     letter-spacing: 0.5px;
 }
 
-/* Potlog ヘッダー（シンプルで洗練された黒白カード） */
-.potlog-container {
-    border: 1px solid #333333;
-    background-color: #0D0D0D;
-    padding: 16px 20px;
-    margin-bottom: 24px;
-}
-
+/* Potlog タイトル（枠囲み・サブタイトルなし） */
 .potlog-title-text {
-    font-size: 1.8rem;
+    font-size: 2.2rem;
     font-weight: 700;
     color: #FFFFFF;
-    margin: 0;
+    margin-bottom: 20px;
 }
 
-.potlog-sub-text {
-    font-size: 0.8rem;
-    color: #888888;
-    margin-top: 4px;
-    font-family: monospace;
-}
-
-/* タブデザイン（シンプル＆クリーン） */
+/* タブデザイン */
 [data-testid="stTabs"] [data-baseweb="tab-list"] {
     gap: 8px;
     background-color: #000000;
@@ -96,7 +82,7 @@ h4, h5, h6 {
     background-color: transparent !important;
 }
 
-/* ボタン（視認性の高いフラット・モダンボタン） */
+/* ボタン */
 div.stButton > button {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     font-weight: 600 !important;
@@ -115,7 +101,7 @@ div.stButton > button:hover {
     color: #FFFFFF !important;
 }
 
-/* プライマリボタン（アクセント） */
+/* プライマリボタン */
 div.stButton > button[kind="primary"] {
     background-color: #FF9900 !important;
     border-color: #FF9900 !important;
@@ -128,7 +114,7 @@ div.stButton > button[kind="primary"]:hover {
     color: #000000 !important;
 }
 
-/* メトリック表示（枠線をなくし背景色のみで整理） */
+/* メトリック表示 */
 div[data-testid="stMetric"] {
     border: 1px solid #262626 !important;
     background-color: #0D0D0D !important;
@@ -144,20 +130,6 @@ div[data-testid="stMetricLabel"] {
 div[data-testid="stMetricValue"] {
     color: #FF9900 !important;
     font-weight: 700 !important;
-}
-
-/* Expander（折りたたみ）の文字崩れ防止とクリーン化 */
-[data-testid="stExpander"] {
-    border: 1px solid #262626 !important;
-    border-radius: 4px !important;
-    background-color: #0D0D0D !important;
-    overflow: hidden;
-}
-
-[data-testid="stExpander"] details summary span {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-    color: #E0E0E0 !important;
-    font-weight: 500 !important;
 }
 
 /* 入力フォーム類 */
@@ -178,16 +150,8 @@ hr {
 
 st.markdown(elektron_css, unsafe_allow_html=True)
 
-# ヘッダー描画
-st.markdown(
-    """
-    <div class="potlog-container">
-        <div class="potlog-title-text">POTLOG</div>
-        <div class="potlog-sub-text">// ELEKTRONIC DRIP ENGINE v2.0</div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# シンプルなタイトル描画（枠囲み・サブタイトル排除）
+st.markdown('<div class="potlog-title-text">POTLOG</div>', unsafe_allow_html=True)
 
 tab1, tab2, tab3, tab4 = st.tabs(["DRIP", "BEANS", "GEAR", "LOGS"])
 
