@@ -46,7 +46,6 @@ def format_step_time(raw_time):
     if not raw_time or raw_time == '-':
         return "-"
     raw_str = str(raw_time).strip()
-    # 0:00 - 0:45 や 0:00 ~ 0:45 から最後の時間（0:45）を抽出
     match = re.search(r'(?:[-~〜]|\s+to\s+)?(\d{1,2}:\d{2})$', raw_str)
     if match:
         return f"-{match.group(1)}"
@@ -84,7 +83,7 @@ def render():
         confirmed_logs = sorted(confirmed_logs, key=lambda x: str(x.get("created_at", "")), reverse=True)
 
     bean_names = [b.get("name") for b in beans_data if b.get("name")] if beans_data else [
-        "Ethiopia Yirgacheffe", "Guatemala Antigua", "Brazil Santos"
+        "Brazil Santos", "Ethiopia Yirgacheffe", "Guatemala Antigua"
     ]
 
     # セッション状態の初期化
@@ -96,6 +95,8 @@ def render():
         st.session_state["sel_shop"] = "ALL"
     if "sel_bean" not in st.session_state:
         st.session_state["sel_bean"] = bean_names[0] if bean_names else ""
+    if "sel_roast_level" not in st.session_state:
+        st.session_state["sel_roast_level"] = "MEDIUM"
     if "sel_flavor" not in st.session_state:
         st.session_state["sel_flavor"] = "BALANCED"
 
@@ -120,11 +121,11 @@ def render():
             }
             st.session_state["draft_log_id"] = my_draft_log.get("id")
 
-    st.markdown("### 1. SETUP")
+    st.markdown("### SETUP")
 
     # --- STEP 1: DRIP TYPE ---
     st.markdown('<div id="step-1" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
-    st.markdown("#### ① TYPE")
+    st.markdown("#### 1. TYPE")
     type_col1, type_col2 = st.columns(2)
     with type_col1:
         if st.button("HOT", use_container_width=True, type="primary" if st.session_state["sel_type"] == "HOT" and st.session_state["wizard_step"] > 1 else "secondary"):
@@ -145,11 +146,11 @@ def render():
     if st.session_state["wizard_step"] >= 2:
         st.markdown("---")
         st.markdown('<div id="step-2" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
-        st.markdown("#### ② ROASTERY")
+        st.markdown("#### 2. ROASTERY")
         shops = sorted(list(set([b.get("shop") for b in beans_data if b.get("shop")])))
-        shop_options = ["ALL"] + shops
+        shop_options = ["ALL", "NONE"] + shops
 
-        shop_cols = st.columns(min(len(shop_options), 3))
+        shop_cols = st.columns(min(len(shop_options), 4))
         for idx, shop_item in enumerate(shop_options):
             col_target = shop_cols[idx % len(shop_cols)]
             with col_target:
@@ -161,38 +162,56 @@ def render():
                     st.session_state["scroll_target"] = "step-3"
                     st.rerun()
 
-    # 豆フィルタリング
-    if st.session_state["sel_shop"] != "ALL":
-        filtered_beans = [b for b in beans_data if b.get("shop") == st.session_state["sel_shop"]]
-    else:
-        filtered_beans = beans_data
-
-    filtered_bean_names = [b.get("name") for b in filtered_beans if b.get("name")]
-    if not filtered_bean_names:
-        filtered_bean_names = bean_names
-
-    # --- STEP 3: BEAN SELECTION ---
+    # --- STEP 3: BEAN or ROAST LEVEL ---
     if st.session_state["wizard_step"] >= 3:
         st.markdown("---")
         st.markdown('<div id="step-3" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
-        st.markdown("#### ③ BEAN")
-        bean_cols = st.columns(1 if len(filtered_bean_names) == 1 else 2)
-        for idx, b_name in enumerate(filtered_bean_names):
-            col_target = bean_cols[idx % len(bean_cols)]
-            with col_target:
-                is_selected = (st.session_state["sel_bean"] == b_name) and (st.session_state["wizard_step"] > 3)
-                if st.button(b_name, key=f"btn_bean_{b_name}", use_container_width=True, type="primary" if is_selected else "secondary"):
-                    st.session_state["sel_bean"] = b_name
-                    if st.session_state["wizard_step"] == 3:
-                        st.session_state["wizard_step"] = 4
-                    st.session_state["scroll_target"] = "step-4"
-                    st.rerun()
+
+        if st.session_state["sel_shop"] == "NONE":
+            st.markdown("#### 3. ROAST LEVEL")
+            roast_levels = ["LIGHT", "MEDIUM", "DARK"]
+            r_cols = st.columns(3)
+            for idx, r_lvl in enumerate(roast_levels):
+                with r_cols[idx]:
+                    is_selected = (st.session_state["sel_roast_level"] == r_lvl) and (st.session_state["wizard_step"] > 3)
+                    if st.button(r_lvl, key=f"btn_roast_{r_lvl}", use_container_width=True, type="primary" if is_selected else "secondary"):
+                        st.session_state["sel_roast_level"] = r_lvl
+                        st.session_state["sel_bean"] = f"Custom Bean ({r_lvl})"
+                        if st.session_state["wizard_step"] == 3:
+                            st.session_state["wizard_step"] = 4
+                        st.session_state["scroll_target"] = "step-4"
+                        st.rerun()
+        else:
+            st.markdown("#### 3. BEAN")
+            if st.session_state["sel_shop"] != "ALL":
+                filtered_beans = [b for b in beans_data if b.get("shop") == st.session_state["sel_shop"]]
+            else:
+                filtered_beans = beans_data
+
+            filtered_bean_names = [b.get("name") for b in filtered_beans if b.get("name")]
+            if not filtered_bean_names:
+                filtered_bean_names = bean_names
+
+            # アルファベット順にソート
+            filtered_bean_names = sorted(filtered_bean_names, key=lambda x: str(x).lower())
+
+            bean_cols = st.columns(1 if len(filtered_bean_names) == 1 else 2)
+            for idx, b_name in enumerate(filtered_bean_names):
+                col_target = bean_cols[idx % len(bean_cols)]
+                with col_target:
+                    is_selected = (st.session_state["sel_bean"] == b_name) and (st.session_state["wizard_step"] > 3)
+                    if st.button(b_name, key=f"btn_bean_{b_name}", use_container_width=True, type="primary" if is_selected else "secondary"):
+                        st.session_state["sel_bean"] = b_name
+                        if st.session_state["wizard_step"] == 3:
+                            st.session_state["wizard_step"] = 4
+                        st.session_state["scroll_target"] = "step-4"
+                        st.rerun()
 
     # --- STEP 4: FLAVOR PROFILE ---
     if st.session_state["wizard_step"] >= 4:
         st.markdown("---")
         st.markdown('<div id="step-4" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
-        st.markdown("#### ④ FLAVOR")
+        st.markdown("#### 4. FLAVOR")
         flavors = ["FRUITY & LIGHT", "BALANCED", "RICH & BOLD"]
         flv_cols = st.columns(3)
         for idx, flv in enumerate(flavors):
@@ -209,7 +228,7 @@ def render():
     if st.session_state["wizard_step"] >= 5:
         st.markdown("---")
         st.markdown('<div id="step-5" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
-        st.markdown("#### ⑤ QUANTITY")
+        st.markdown("#### 5. QUANTITY")
         with st.expander("SETTINGS", expanded=True):
             col_sub1, col_sub2 = st.columns(2)
             with col_sub1:
@@ -230,8 +249,16 @@ def render():
                     key="drip_roast_date"
                 )
 
-        chosen_bean = next((b for b in beans_data if b.get("name") == st.session_state["sel_bean"]), {"name": st.session_state["sel_bean"]})
-        chosen_bean_id = chosen_bean.get("id") if isinstance(chosen_bean, dict) else None
+        if st.session_state["sel_shop"] == "NONE":
+            chosen_bean = {
+                "name": f"Custom Bean ({st.session_state.get('sel_roast_level', 'MEDIUM')})",
+                "roast_level": st.session_state.get('sel_roast_level', 'MEDIUM'),
+                "notes": "Custom bean without roastery designation"
+            }
+            chosen_bean_id = None
+        else:
+            chosen_bean = next((b for b in beans_data if b.get("name") == st.session_state["sel_bean"]), {"name": st.session_state["sel_bean"]})
+            chosen_bean_id = chosen_bean.get("id") if isinstance(chosen_bean, dict) else None
 
         # 過去フィードバック
         past_feedback_text = "No prior feedback"
@@ -286,7 +313,7 @@ def render():
                     if recipe_data:
                         st.session_state["current_recipe"] = recipe_data
                         st.session_state["current_drip_params"] = {
-                            "bean_name": st.session_state["sel_bean"], "bean_id": chosen_bean_id,
+                            "bean_name": chosen_bean.get("name"), "bean_id": chosen_bean_id,
                             "flavor_profile": st.session_state["sel_flavor"], "cup_count": cup_count, "roast_date": roast_date_str,
                             "coffee_type": st.session_state["sel_type"], "water_per_cup": selected_water_per_cup
                         }
@@ -300,7 +327,7 @@ def render():
                             "data": {
                                 "is_draft": True,
                                 "session_id": user_session_id,
-                                "bean_name": st.session_state["sel_bean"], "recipe": recipe_data,
+                                "bean_name": chosen_bean.get("name"), "recipe": recipe_data,
                                 "coffee_type": st.session_state["sel_type"], "water_per_cup": selected_water_per_cup
                             }
                         }
@@ -338,23 +365,22 @@ def render():
         st.success(f"READY // [{params.get('coffee_type', 'HOT')}] {params.get('water_per_cup', 300)}ml x {params.get('cup_count', 1)}")
         st.markdown(f"### {recipe.get('recipe_title', '-')}")
 
+        formatted_bloom = format_bloom_time(recipe.get('bloom_time'))
+
         c_p1, c_p2 = st.columns(2)
         with c_p1:
             st.metric("COFFEE", recipe.get('coffee_amount', '-'))
             st.metric("TEMP", recipe.get('water_temp', '-'))
+            st.metric("DRIPPER", recipe.get('dripper', '-'))
+            st.metric("GRINDER", recipe.get('grinder', '-'))
         with c_p2:
             st.metric("GRIND", recipe.get('grind_setting', '-'))
-            formatted_bloom = format_bloom_time(recipe.get('bloom_time'))
             st.metric("BLOOM", formatted_bloom)
+            st.metric("FILTER", recipe.get('filter', '-'))
 
         ice_val = recipe.get('ice_amount', 'なし')
         if ice_val and ice_val != 'なし' and ice_val != '-':
             st.info(f"PRE-ICE: {ice_val}")
-
-        with st.expander("GEAR", expanded=False):
-            st.write(f"- **DRIPPER**: {recipe.get('dripper', '-')}")
-            st.write(f"- **FILTER**: {recipe.get('filter', '-')}")
-            st.write(f"- **GRINDER**: {recipe.get('grinder', '-')}")
 
         st.markdown("### STEPS")
         steps = recipe.get('recipe_steps', [])
