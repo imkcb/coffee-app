@@ -109,6 +109,12 @@ label, .stMarkdown p, [data-testid="stWidgetLabel"] p {{
     margin-bottom: 20px;
 }}
 
+/* --- Streamlit標準の動的ピンクアンダーラインを非表示化 --- */
+div[data-baseweb="tab-highlight-point"] {{
+    background-color: transparent !important;
+    display: none !important;
+}}
+
 /* タブバー共通設定 */
 [data-testid="stTabs"] [data-baseweb="tab-list"] {{
     gap: 6px;
@@ -127,14 +133,14 @@ label, .stMarkdown p, [data-testid="stWidgetLabel"] p {{
     padding: 8px 12px !important;
 }}
 
-/* タブ選択時のアンダーライン表示 */
-[data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(1)[aria-selected="true"] {{ color: {c_drip} !important; border-bottom: 2px solid {c_drip} !important; }}
-[data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(2)[aria-selected="true"] {{ color: {c_beans} !important; border-bottom: 2px solid {c_beans} !important; }}
-[data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(3)[aria-selected="true"] {{ color: {c_gear} !important; border-bottom: 2px solid {c_gear} !important; }}
-[data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(4)[aria-selected="true"] {{ color: {c_logs} !important; border-bottom: 2px solid {c_logs} !important; }}
-[data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(5)[aria-selected="true"] {{ color: {c_system} !important; border-bottom: 2px solid {c_system} !important; }}
+/* タブ選択時のカラーアンダーライン */
+[data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(1)[aria-selected="true"] {{ color: {c_drip} !important; border-bottom: 3px solid {c_drip} !important; }}
+[data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(2)[aria-selected="true"] {{ color: {c_beans} !important; border-bottom: 3px solid {c_beans} !important; }}
+[data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(3)[aria-selected="true"] {{ color: {c_gear} !important; border-bottom: 3px solid {c_gear} !important; }}
+[data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(4)[aria-selected="true"] {{ color: {c_logs} !important; border-bottom: 3px solid {c_logs} !important; }}
+[data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(5)[aria-selected="true"] {{ color: {c_system} !important; border-bottom: 3px solid {c_system} !important; }}
 
-/* --- 初期（未選択）ボタン：無色（シックなダーク背景＋枠線） --- */
+/* --- 未選択（初期状態）ボタン：無色（ダークグレー枠線のみ） --- */
 div.stButton > button,
 button[data-testid="stBaseButton-secondary"] {{
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
@@ -153,101 +159,103 @@ button[data-testid="stBaseButton-secondary"]:hover {{
     border-color: {text_color} !important;
 }}
 
-/* --- デフォルトプライマリボタン（フォールバック：蛍光黄緑） --- */
+/* --- PRIMARYボタン（選択状態）：デフォルト背景を蛍光黄緑に統一設定 --- */
 button[data-testid="stBaseButton-primary"],
 button[kind="primary"],
-div.stButton > button[kind="primary"] {{
+div.stButton > button[kind="primary"],
+div.stButton > button[data-testid="stBaseButton-primary"] {{
     background-color: {c_drip} !important;
     border-color: {c_drip} !important;
     color: {c_drip_txt} !important;
 }}
 
 button[data-testid="stBaseButton-primary"] *,
-button[kind="primary"] * {{
+button[kind="primary"] *,
+div.stButton > button[kind="primary"] * {{
     color: {c_drip_txt} !important;
     font-weight: bold !important;
 }}
 
-/* --- 各タブ（1〜5）ごとの選択時テーマカラー指定 --- */
+/* --- 各タブ（1〜5）ごとの選択状態テーマカラー定義 --- */
 
 /* 1. DRIP タブ（蛍光黄緑 #00FF66） */
-[data-testid="stTabPanel"]:nth-of-type(1) button[data-testid="stBaseButton-primary"],
-[data-testid="stTabPanel"]:nth-of-type(1) button[kind="primary"],
-[data-testid="stTabPanel"]:nth-of-type(1) div.stButton > button[kind="primary"] {{
+div[data-testid="stTabPanel"]:nth-of-type(1) button[data-testid="stBaseButton-primary"],
+div[data-testid="stTabPanel"]:nth-of-type(1) button[kind="primary"],
+div[data-testid="stTabPanel"]:nth-of-type(1) div.stButton > button[kind="primary"] {{
     background-color: {c_drip} !important;
     border-color: {c_drip} !important;
     color: {c_drip_txt} !important;
 }}
-[data-testid="stTabPanel"]:nth-of-type(1) button[data-testid="stBaseButton-primary"] *,
-[data-testid="stTabPanel"]:nth-of-type(1) button[kind="primary"] * {{
+div[data-testid="stTabPanel"]:nth-of-type(1) button[data-testid="stBaseButton-primary"] *,
+div[data-testid="stTabPanel"]:nth-of-type(1) button[kind="primary"] * {{
     color: {c_drip_txt} !important;
     font-weight: bold !important;
 }}
 
 /* 2. BEANS タブ（蛍光ピンク #FF007F） */
-[data-testid="stTabPanel"]:nth-of-type(2) button[data-testid="stBaseButton-primary"],
-[data-testid="stTabPanel"]:nth-of-type(2) button[kind="primary"],
-[data-testid="stTabPanel"]:nth-of-type(2) div.stButton > button[kind="primary"] {{
+div[data-testid="stTabPanel"]:nth-of-type(2) button[data-testid="stBaseButton-primary"],
+div[data-testid="stTabPanel"]:nth-of-type(2) button[kind="primary"],
+div[data-testid="stTabPanel"]:nth-of-type(2) div.stButton > button[kind="primary"] {{
     background-color: {c_beans} !important;
     border-color: {c_beans} !important;
     color: {c_beans_txt} !important;
 }}
-[data-testid="stTabPanel"]:nth-of-type(2) button[data-testid="stBaseButton-primary"] *,
-[data-testid="stTabPanel"]:nth-of-type(2) button[kind="primary"] * {{
+div[data-testid="stTabPanel"]:nth-of-type(2) button[data-testid="stBaseButton-primary"] *,
+div[data-testid="stTabPanel"]:nth-of-type(2) button[kind="primary"] * {{
     color: {c_beans_txt} !important;
     font-weight: bold !important;
 }}
 
 /* 3. GEAR タブ（蛍光イエロー #FFEE00） */
-[data-testid="stTabPanel"]:nth-of-type(3) button[data-testid="stBaseButton-primary"],
-[data-testid="stTabPanel"]:nth-of-type(3) button[kind="primary"],
-[data-testid="stTabPanel"]:nth-of-type(3) div.stButton > button[kind="primary"] {{
+div[data-testid="stTabPanel"]:nth-of-type(3) button[data-testid="stBaseButton-primary"],
+div[data-testid="stTabPanel"]:nth-of-type(3) button[kind="primary"],
+div[data-testid="stTabPanel"]:nth-of-type(3) div.stButton > button[kind="primary"] {{
     background-color: {c_gear} !important;
     border-color: {c_gear} !important;
     color: {c_gear_txt} !important;
 }}
-[data-testid="stTabPanel"]:nth-of-type(3) button[data-testid="stBaseButton-primary"] *,
-[data-testid="stTabPanel"]:nth-of-type(3) button[kind="primary"] * {{
+div[data-testid="stTabPanel"]:nth-of-type(3) button[data-testid="stBaseButton-primary"] *,
+div[data-testid="stTabPanel"]:nth-of-type(3) button[kind="primary"] * {{
     color: {c_gear_txt} !important;
     font-weight: bold !important;
 }}
 
 /* 4. LOGS タブ（蛍光ブルー #00E5FF） */
-[data-testid="stTabPanel"]:nth-of-type(4) button[data-testid="stBaseButton-primary"],
-[data-testid="stTabPanel"]:nth-of-type(4) button[kind="primary"],
-[data-testid="stTabPanel"]:nth-of-type(4) div.stButton > button[kind="primary"] {{
+div[data-testid="stTabPanel"]:nth-of-type(4) button[data-testid="stBaseButton-primary"],
+div[data-testid="stTabPanel"]:nth-of-type(4) button[kind="primary"],
+div[data-testid="stTabPanel"]:nth-of-type(4) div.stButton > button[kind="primary"] {{
     background-color: {c_logs} !important;
     border-color: {c_logs} !important;
     color: {c_logs_txt} !important;
 }}
-[data-testid="stTabPanel"]:nth-of-type(4) button[data-testid="stBaseButton-primary"] *,
-[data-testid="stTabPanel"]:nth-of-type(4) button[kind="primary"] * {{
+div[data-testid="stTabPanel"]:nth-of-type(4) button[data-testid="stBaseButton-primary"] *,
+div[data-testid="stTabPanel"]:nth-of-type(4) button[kind="primary"] * {{
     color: {c_logs_txt} !important;
     font-weight: bold !important;
 }}
 
 /* 5. SYSTEM タブ（蛍光パープル #B026FF） */
-[data-testid="stTabPanel"]:nth-of-type(5) button[data-testid="stBaseButton-primary"],
-[data-testid="stTabPanel"]:nth-of-type(5) button[kind="primary"],
-[data-testid="stTabPanel"]:nth-of-type(5) div.stButton > button[kind="primary"] {{
+div[data-testid="stTabPanel"]:nth-of-type(5) button[data-testid="stBaseButton-primary"],
+div[data-testid="stTabPanel"]:nth-of-type(5) button[kind="primary"],
+div[data-testid="stTabPanel"]:nth-of-type(5) div.stButton > button[kind="primary"] {{
     background-color: {c_system} !important;
     border-color: {c_system} !important;
     color: {c_system_txt} !important;
 }}
-[data-testid="stTabPanel"]:nth-of-type(5) button[data-testid="stBaseButton-primary"] *,
-[data-testid="stTabPanel"]:nth-of-type(5) button[kind="primary"] * {{
+div[data-testid="stTabPanel"]:nth-of-type(5) button[data-testid="stBaseButton-primary"] *,
+div[data-testid="stTabPanel"]:nth-of-type(5) button[kind="primary"] * {{
     color: {c_system_txt} !important;
     font-weight: bold !important;
 }}
 
 /* スライダー＆マルチセレクトタグのテーマカラー適用 */
-[data-testid="stTabPanel"]:nth-of-type(1) [data-baseweb="slider"] div[role="slider"] {{ background-color: {c_drip} !important; border-color: {c_drip} !important; }}
-[data-testid="stTabPanel"]:nth-of-type(1) [data-baseweb="slider"] > div > div > div {{ background-color: {c_drip} !important; }}
+div[data-testid="stTabPanel"]:nth-of-type(1) [data-baseweb="slider"] div[role="slider"] {{ background-color: {c_drip} !important; border-color: {c_drip} !important; }}
+div[data-testid="stTabPanel"]:nth-of-type(1) [data-baseweb="slider"] > div > div > div {{ background-color: {c_drip} !important; }}
 
-[data-testid="stTabPanel"]:nth-of-type(1) span[data-baseweb="tag"] {{ background-color: {c_drip} !important; border-color: {c_drip} !important; }}
-[data-testid="stTabPanel"]:nth-of-type(1) span[data-baseweb="tag"] span, 
-[data-testid="stTabPanel"]:nth-of-type(1) span[data-baseweb="tag"] div, 
-[data-testid="stTabPanel"]:nth-of-type(1) span[data-baseweb="tag"] svg {{ color: {c_drip_txt} !important; fill: {c_drip_txt} !important; font-weight: bold !important; }}
+div[data-testid="stTabPanel"]:nth-of-type(1) span[data-baseweb="tag"] {{ background-color: {c_drip} !important; border-color: {c_drip} !important; }}
+div[data-testid="stTabPanel"]:nth-of-type(1) span[data-baseweb="tag"] span, 
+div[data-testid="stTabPanel"]:nth-of-type(1) span[data-baseweb="tag"] div, 
+div[data-testid="stTabPanel"]:nth-of-type(1) span[data-baseweb="tag"] svg {{ color: {c_drip_txt} !important; fill: {c_drip_txt} !important; font-weight: bold !important; }}
 
 /* READY通知バナーの黒背景×蛍光黄緑枠化 */
 div[data-testid="stNotification"] {{
@@ -268,11 +276,11 @@ div[data-testid="stMetric"] {{
 }}
 
 div[data-testid="stMetricLabel"] {{ color: {sub_text_color} !important; font-size: 0.75rem !important; }}
-[data-testid="stTabPanel"]:nth-of-type(1) div[data-testid="stMetricValue"] {{ color: {c_drip} !important; }}
-[data-testid="stTabPanel"]:nth-of-type(2) div[data-testid="stMetricValue"] {{ color: {c_beans} !important; }}
-[data-testid="stTabPanel"]:nth-of-type(3) div[data-testid="stMetricValue"] {{ color: {c_gear} !important; }}
-[data-testid="stTabPanel"]:nth-of-type(4) div[data-testid="stMetricValue"] {{ color: {c_logs} !important; }}
-[data-testid="stTabPanel"]:nth-of-type(5) div[data-testid="stMetricValue"] {{ color: {c_system} !important; }}
+div[data-testid="stTabPanel"]:nth-of-type(1) div[data-testid="stMetricValue"] {{ color: {c_drip} !important; }}
+div[data-testid="stTabPanel"]:nth-of-type(2) div[data-testid="stMetricValue"] {{ color: {c_beans} !important; }}
+div[data-testid="stTabPanel"]:nth-of-type(3) div[data-testid="stMetricValue"] {{ color: {c_gear} !important; }}
+div[data-testid="stTabPanel"]:nth-of-type(4) div[data-testid="stMetricValue"] {{ color: {c_logs} !important; }}
+div[data-testid="stTabPanel"]:nth-of-type(5) div[data-testid="stMetricValue"] {{ color: {c_system} !important; }}
 
 /* 入力フォーム類 */
 input, select, textarea, div[data-baseweb="select"] {{

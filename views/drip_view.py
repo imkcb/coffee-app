@@ -97,19 +97,19 @@ def render():
         "Brazil Santos", "Ethiopia Yirgacheffe", "Guatemala Antigua"
     ]
 
-    # セッション状態の初期化
+    # セッション状態の初期化（初期選択は全て未選択 None）
     if "wizard_step" not in st.session_state:
         st.session_state["wizard_step"] = 1
     if "sel_type" not in st.session_state:
-        st.session_state["sel_type"] = "HOT"
+        st.session_state["sel_type"] = None
     if "sel_shop" not in st.session_state:
-        st.session_state["sel_shop"] = "ALL"
+        st.session_state["sel_shop"] = None
     if "sel_bean" not in st.session_state:
-        st.session_state["sel_bean"] = bean_names[0] if bean_names else ""
+        st.session_state["sel_bean"] = None
     if "sel_roast_level" not in st.session_state:
-        st.session_state["sel_roast_level"] = "MEDIUM"
+        st.session_state["sel_roast_level"] = None
     if "sel_flavor" not in st.session_state:
-        st.session_state["sel_flavor"] = "BALANCED"
+        st.session_state["sel_flavor"] = None
     if "water_amount" not in st.session_state:
         st.session_state["water_amount"] = 300
 
@@ -136,16 +136,16 @@ def render():
     st.markdown("#### 1. TYPE")
     type_col1, type_col2 = st.columns(2)
     with type_col1:
-        is_type_hot = (st.session_state["sel_type"] == "HOT") and (st.session_state["wizard_step"] > 1)
-        if st.button("HOT", key="btn_type_hot", use_container_width=True, type="primary" if is_type_hot else "secondary"):
+        is_selected = (st.session_state["sel_type"] == "HOT")
+        if st.button("HOT", key="btn_type_hot", use_container_width=True, type="primary" if is_selected else "secondary"):
             st.session_state["sel_type"] = "HOT"
             if st.session_state["wizard_step"] == 1:
                 st.session_state["wizard_step"] = 2
             st.session_state["scroll_target"] = "step-2"
             st.rerun()
     with type_col2:
-        is_type_iced = (st.session_state["sel_type"] == "ICED") and (st.session_state["wizard_step"] > 1)
-        if st.button("ICED", key="btn_type_iced", use_container_width=True, type="primary" if is_type_iced else "secondary"):
+        is_selected = (st.session_state["sel_type"] == "ICED")
+        if st.button("ICED", key="btn_type_iced", use_container_width=True, type="primary" if is_selected else "secondary"):
             st.session_state["sel_type"] = "ICED"
             if st.session_state["wizard_step"] == 1:
                 st.session_state["wizard_step"] = 2
@@ -164,7 +164,7 @@ def render():
         for idx, shop_item in enumerate(shop_options):
             col_target = shop_cols[idx % len(shop_cols)]
             with col_target:
-                is_selected = (st.session_state["sel_shop"] == shop_item) and (st.session_state["wizard_step"] > 2)
+                is_selected = (st.session_state["sel_shop"] == shop_item)
                 if st.button(shop_item, key=f"btn_shop_{shop_item}", use_container_width=True, type="primary" if is_selected else "secondary"):
                     st.session_state["sel_shop"] = shop_item
                     if st.session_state["wizard_step"] == 2:
@@ -183,7 +183,7 @@ def render():
             r_cols = st.columns(3)
             for idx, r_lvl in enumerate(roast_levels):
                 with r_cols[idx]:
-                    is_selected = (st.session_state["sel_roast_level"] == r_lvl) and (st.session_state["wizard_step"] > 3)
+                    is_selected = (st.session_state["sel_roast_level"] == r_lvl)
                     if st.button(r_lvl, key=f"btn_roast_{r_lvl}", use_container_width=True, type="primary" if is_selected else "secondary"):
                         st.session_state["sel_roast_level"] = r_lvl
                         st.session_state["sel_bean"] = f"Custom Bean ({r_lvl})"
@@ -208,7 +208,7 @@ def render():
             for idx, b_name in enumerate(filtered_bean_names):
                 col_target = bean_cols[idx % len(bean_cols)]
                 with col_target:
-                    is_selected = (st.session_state["sel_bean"] == b_name) and (st.session_state["wizard_step"] > 3)
+                    is_selected = (st.session_state["sel_bean"] == b_name)
                     if st.button(b_name, key=f"btn_bean_{b_name}", use_container_width=True, type="primary" if is_selected else "secondary"):
                         st.session_state["sel_bean"] = b_name
                         if st.session_state["wizard_step"] == 3:
@@ -225,7 +225,7 @@ def render():
         flv_cols = st.columns(3)
         for idx, flv in enumerate(flavors):
             with flv_cols[idx]:
-                is_selected = (st.session_state["sel_flavor"] == flv) and (st.session_state["wizard_step"] > 4)
+                is_selected = (st.session_state["sel_flavor"] == flv)
                 if st.button(flv, key=f"btn_flv_{flv}", use_container_width=True, type="primary" if is_selected else "secondary"):
                     st.session_state["sel_flavor"] = flv
                     if st.session_state["wizard_step"] == 4:
@@ -263,7 +263,7 @@ def render():
             }
             chosen_bean_id = None
         else:
-            chosen_bean = next((b for b in beans_data if b.get("name") == st.session_state["sel_bean"]), {"name": st.session_state["sel_bean"]})
+            chosen_bean = next((b for b in beans_data if b.get("name") == st.session_state["sel_bean"]), {"name": st.session_state.get("sel_bean", "Custom Bean")})
             chosen_bean_id = chosen_bean.get("id") if isinstance(chosen_bean, dict) else None
 
         # 過去フィードバック
@@ -307,11 +307,11 @@ def render():
                     prompt = prompts.build_drip_prompt(
                         chosen_bean=chosen_bean,
                         roast_date_str=roast_date_str,
-                        flavor_profile=st.session_state["sel_flavor"],
+                        flavor_profile=st.session_state.get("sel_flavor", "BALANCED"),
                         cup_count=1,
                         equipment_data=active_equipment,
                         past_feedback_text=past_feedback_text,
-                        coffee_type=st.session_state["sel_type"],
+                        coffee_type=st.session_state.get("sel_type", "HOT"),
                         water_per_cup=selected_water
                     )
 
@@ -320,13 +320,13 @@ def render():
                         st.session_state["current_recipe"] = recipe_data
                         st.session_state["current_drip_params"] = {
                             "bean_name": chosen_bean.get("name"), "bean_id": chosen_bean_id,
-                            "flavor_profile": st.session_state["sel_flavor"], "cup_count": 1, "roast_date": roast_date_str,
-                            "coffee_type": st.session_state["sel_type"], "water_per_cup": selected_water
+                            "flavor_profile": st.session_state.get("sel_flavor", "BALANCED"), "cup_count": 1, "roast_date": roast_date_str,
+                            "coffee_type": st.session_state.get("sel_type", "HOT"), "water_per_cup": selected_water
                         }
 
                         draft_payload = {
                             "bean_id": chosen_bean_id,
-                            "flavor_profile": st.session_state["sel_flavor"],
+                            "flavor_profile": st.session_state.get("sel_flavor", "BALANCED"),
                             "cup_count": 1,
                             "roasted_date": roast_date_str if roast_date_str != "UNSPECIFIED" else None,
                             "grind_setting": recipe_data.get('grind_setting', '-'),
@@ -334,7 +334,7 @@ def render():
                                 "is_draft": True,
                                 "session_id": user_session_id,
                                 "bean_name": chosen_bean.get("name"), "recipe": recipe_data,
-                                "coffee_type": st.session_state["sel_type"], "water_per_cup": selected_water
+                                "coffee_type": st.session_state.get("sel_type", "HOT"), "water_per_cup": selected_water
                             }
                         }
 
@@ -358,6 +358,11 @@ def render():
         with col_btn2:
             if st.button("RESET", use_container_width=True):
                 st.session_state["wizard_step"] = 1
+                st.session_state["sel_type"] = None
+                st.session_state["sel_shop"] = None
+                st.session_state["sel_bean"] = None
+                st.session_state["sel_roast_level"] = None
+                st.session_state["sel_flavor"] = None
                 st.session_state["scroll_target"] = "step-1"
                 st.rerun()
 
@@ -479,6 +484,11 @@ def render():
                 if "draft_log_id" in st.session_state:
                     del st.session_state["draft_log_id"]
                 st.session_state["wizard_step"] = 1
+                st.session_state["sel_type"] = None
+                st.session_state["sel_shop"] = None
+                st.session_state["sel_bean"] = None
+                st.session_state["sel_roast_level"] = None
+                st.session_state["sel_flavor"] = None
                 st.session_state["scroll_target"] = "step-1"
                 st.rerun()
             except Exception as e:
