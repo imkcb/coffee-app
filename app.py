@@ -34,7 +34,6 @@ if drip_logs_data:
     for log in drip_logs_data:
         data_p = log.get("data") or {}
         if data_p.get("is_draft") is True:
-            # 自分のセッションIDに一致するドラフトのみ抽出（他人のドラフトと隔離）
             if data_p.get("session_id") == user_session_id:
                 my_draft_log = log
         else:
@@ -122,7 +121,7 @@ with tab1:
         key="drip_flavor_profile"
     )
     
-    with st.expander("⚙️ 細かい設定（量・杯数・焙煎日）", expanded=True):
+    with st.expander("⚙️ 細かい設定（量・杯数・焙煎日）", expanded=False):
         col_sub1, col_sub2 = st.columns(2)
         with col_sub1:
             selected_water_per_cup = st.number_input(
@@ -200,7 +199,6 @@ with tab1:
                     "coffee_type": selected_coffee_type, "water_per_cup": selected_water_per_cup
                 }
                 
-                # 自分専用（session_id 紐付け）のドラフトとして上書き保存
                 draft_payload = {
                     "bean_id": chosen_bean_id,
                     "flavor_profile": flavor_profile,
@@ -209,7 +207,7 @@ with tab1:
                     "grind_setting": recipe_data.get('grind_setting', '-'),
                     "data": {
                         "is_draft": True,
-                        "session_id": user_session_id,  # ユーザー識別キー
+                        "session_id": user_session_id,
                         "bean_name": bean_choice, "recipe": recipe_data,
                         "coffee_type": selected_coffee_type, "water_per_cup": selected_water_per_cup
                     }
@@ -237,36 +235,50 @@ with tab1:
 
         st.divider()
         st.success(f"レシピが完成しました！（{params.get('coffee_type', 'ホット')} / {params.get('water_per_cup', 300)}ml×{params.get('cup_count', 1)}杯）")
-        
         st.markdown(f"### 📖 {recipe.get('recipe_title', '-')}")
 
-        st.subheader("✨ 使用器具指示")
-        st.write(f"- **ドリッパー**: {recipe.get('dripper', '-')}")
-        st.write(f"- **フィルター**: {recipe.get('filter', '-')}")
-        st.write(f"- **ミル・グラインダー**: {recipe.get('grinder', '-')}")
-        
-        st.divider()
-        st.write(f"**おすすめ粉量**: {recipe.get('coffee_amount', '-')}")
-        st.write(f"**お湯の温度**: {recipe.get('water_temp', '-')}")
-        
-        ice_val = recipe.get('ice_amount', 'なし')
-        if ice_val and ice_val != 'なし' and ice_val != '-':
-            st.write(f"**準備する氷（サーバー内）**: 🧊 {ice_val}")
+        # 基本要件のサマリー（コンパクト表示）
+        c_p1, c_p2 = st.columns(2)
+        with c_p1:
+            st.metric("おすすめ粉量", recipe.get('coffee_amount', '-'))
+            st.metric("お湯の温度", recipe.get('water_temp', '-'))
+        with c_p2:
+            st.metric("ミル挽き目", recipe.get('grind_setting', '-'))
+            ice_val = recipe.get('ice_amount', 'なし')
+            if ice_val and ice_val != 'なし' and ice_val != '-':
+                st.metric("事前投入の氷", f"🧊 {ice_val}")
+            else:
+                st.metric("蒸らし時間", recipe.get('bloom_time', '-'))
 
-        st.write(f"**ミルのグラインド設定**: {recipe.get('grind_setting', '-')}")
-        st.write(f"**蒸らし時間**: {recipe.get('bloom_time', '-')}")
+        with st.expander("✨ 使用指定器具の詳細を見る", expanded=False):
+            st.write(f"- **ドリッパー**: {recipe.get('dripper', '-')}")
+            st.write(f"- **フィルター**: {recipe.get('filter', '-')}")
+            st.write(f"- **ミル・グラインダー**: {recipe.get('grinder', '-')}")
 
         st.markdown("### 📊 抽出ステップ手順")
         steps = recipe.get('recipe_steps', [])
         if steps and isinstance(steps, list):
-            table_md = "| STEP | 時間 | 注ぎ量 | 累計湯量 | 流量 | 注ぎ方 | 目的 |\n"
-            table_md += "| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
             for s in steps:
                 if isinstance(s, dict):
-                    table_md += f"| {s.get('step_number', '-')} | {s.get('time', '-')} | {s.get('pour_amount', '-')} | {s.get('total_amount', '-')} | {s.get('flow_rate', '-')} | {s.get('pouring_method', '-')} | {s.get('purpose', '-')} |\n"
-            st.markdown(table_md)
+                    st.markdown(
+                        f"""
+                        <div style="background-color: #1e222a; padding: 12px 16px; border-radius: 8px; border-left: 5px solid #ff4b4b; margin-bottom: 12px;">
+                            <div style="font-size: 1.1em; font-weight: bold; color: #ffffff; display: flex; justify-content: space-between;">
+                                <span>STEP {s.get('step_number', '-')}: {s.get('purpose', '-')}</span>
+                                <span style="color: #ffbd45;">⏱️ {s.get('time', '-')}</span>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 0.95em; color: #d0d4dc;">
+                                💧 <b>注ぎ量:</b> {s.get('pour_amount', '-')} ｜ 🏁 <b>累計:</b> <span style="font-weight: bold; color: #40c4ff;">{s.get('total_amount', '-')}</span>
+                            </div>
+                            <div style="margin-top: 6px; font-size: 0.9em; color: #a0a8b6;">
+                                🌀 <b>注ぎ方:</b> {s.get('pouring_method', '-')}（{s.get('flow_rate', '-')}）
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
 
-        st.info(f"💡 ワンポイント: {recipe.get('notes', '-')}")
+        st.info(f"💡 **ワンポイント解説**: {recipe.get('notes', '-')}")
 
         with st.expander("🔍 生成された生のデータ（JSON）を確認"):
             st.json(recipe)
@@ -293,7 +305,7 @@ with tab1:
                     "roasted_date": params.get("roast_date") if params.get("roast_date") != "未指定" else None,
                     "grind_setting": recipe.get('grind_setting', '-'),
                     "data": {
-                        "is_draft": False,  # ドラフト解除（確定ログ化）
+                        "is_draft": False,
                         "session_id": user_session_id,
                         "bean_name": params.get("bean_name"), "recipe": recipe,
                         "rating": drip_rating, "acid_level": acid_level, "bitter_level": bitter_level,
@@ -534,12 +546,9 @@ with tab4:
                 steps = recipe.get('recipe_steps', [])
                 if steps and isinstance(steps, list):
                     st.markdown("**抽出ステップ**:")
-                    table_md = "| STEP | 時間 | 注ぎ量 | 累計湯量 | 流量 | 注ぎ方 | 目的 |\n"
-                    table_md += "| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
                     for s in steps:
                         if isinstance(s, dict):
-                            table_md += f"| {s.get('step_number', '-')} | {s.get('time', '-')} | {s.get('pour_amount', '-')} | {s.get('total_amount', '-')} | {s.get('flow_rate', '-')} | {s.get('pouring_method', '-')} | {s.get('purpose', '-')} |\n"
-                    st.markdown(table_md)
+                            st.markdown(f"- **STEP {s.get('step_number', '-')} ({s.get('time', '-')})**: {s.get('pour_amount', '-')}（累計 {s.get('total_amount', '-')}） / {s.get('pouring_method', '-')}")
                 
                 st.divider()
                 f_col1, f_col2 = st.columns(2)
