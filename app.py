@@ -1,4 +1,5 @@
 import os
+import datetime
 import streamlit as st
 
 # Streamlit CloudのSecretsをプログラム側の環境変数へ反映
@@ -93,7 +94,14 @@ with tab1:
                 value=st.session_state["default_cup_count"]
             )
         with col_sub2:
-            roast_date_input = st.date_input("焙煎日（任意）", value=None, key="drip_roast_date")
+            # 過去日を上限（本日）まで自由に選択可能にする設定へ変更
+            today_date = datetime.date.today()
+            roast_date_input = st.date_input(
+                "焙煎日（任意）",
+                value=None,
+                max_value=today_date,
+                key="drip_roast_date"
+            )
 
     chosen_bean = next((b for b in beans_data if b.get("name") == bean_choice), {"name": bean_choice})
     chosen_bean_id = chosen_bean.get("id") if isinstance(chosen_bean, dict) else None
