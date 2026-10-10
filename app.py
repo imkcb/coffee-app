@@ -72,7 +72,7 @@ else:  # DARK または SYSTEM
     c_system = "#B026FF"  # Neon Purple
     c_system_txt = "#FFFFFF"
 
-# 2. GLOBAL & TAB-ACCENT CSS
+# 2. GLOBAL & TAB-PANEL DIRECT CSS
 elektron_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
@@ -135,8 +135,7 @@ label, .stMarkdown p, [data-testid="stWidgetLabel"] p {{
 [data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(5)[aria-selected="true"] {{ color: {c_system} !important; border-bottom: 2px solid {c_system} !important; }}
 
 /* 未選択ボタン基本構造 */
-div.stButton > button,
-button[data-testid="stBaseButton-secondary"] {{
+div.stButton > button {{
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     font-weight: 600 !important;
     font-size: 0.9rem !important;
@@ -148,98 +147,88 @@ button[data-testid="stBaseButton-secondary"] {{
     transition: all 0.15s ease;
 }}
 
-div.stButton > button:hover,
-button[data-testid="stBaseButton-secondary"]:hover {{ border-color: {text_color} !important; }}
+div.stButton > button:hover {{ border-color: {text_color} !important; }}
 
-/* --- PRIMARYボタン（選択状態）の全ターゲット網羅と完全テーマカラー着色 --- */
-.tab-drip button[data-testid="stBaseButton-primary"],
-.tab-drip button[kind="primary"],
-.tab-drip div.stButton > button[kind="primary"],
-.tab-drip div.stButton > button[data-testid="stBaseButton-primary"] {{
+/* --- 各タブパネル内の PRIMARY ボタン（選択状態）の完全直接着色 --- */
+
+/* 1. DRIP タブ (パネル1) */
+[data-testid="stTabPanel"]:nth-of-type(1) button[data-testid="stBaseButton-primary"],
+[data-testid="stTabPanel"]:nth-of-type(1) button[kind="primary"],
+[data-testid="stTabPanel"]:nth-of-type(1) div.stButton > button[kind="primary"] {{
     background-color: {c_drip} !important;
     border-color: {c_drip} !important;
     color: {c_drip_txt} !important;
 }}
-.tab-drip button[data-testid="stBaseButton-primary"] *,
-.tab-drip button[kind="primary"] *,
-.tab-drip div.stButton > button[kind="primary"] *,
-.tab-drip div.stButton > button[data-testid="stBaseButton-primary"] * {{
+[data-testid="stTabPanel"]:nth-of-type(1) button[data-testid="stBaseButton-primary"] *,
+[data-testid="stTabPanel"]:nth-of-type(1) button[kind="primary"] * {{
     color: {c_drip_txt} !important;
     font-weight: bold !important;
 }}
 
-.tab-beans button[data-testid="stBaseButton-primary"],
-.tab-beans button[kind="primary"],
-.tab-beans div.stButton > button[kind="primary"],
-.tab-beans div.stButton > button[data-testid="stBaseButton-primary"] {{
+/* 2. BEANS タブ (パネル2) */
+[data-testid="stTabPanel"]:nth-of-type(2) button[data-testid="stBaseButton-primary"],
+[data-testid="stTabPanel"]:nth-of-type(2) button[kind="primary"],
+[data-testid="stTabPanel"]:nth-of-type(2) div.stButton > button[kind="primary"] {{
     background-color: {c_beans} !important;
     border-color: {c_beans} !important;
     color: {c_beans_txt} !important;
 }}
-.tab-beans button[data-testid="stBaseButton-primary"] *,
-.tab-beans button[kind="primary"] *,
-.tab-beans div.stButton > button[kind="primary"] *,
-.tab-beans div.stButton > button[data-testid="stBaseButton-primary"] * {{
+[data-testid="stTabPanel"]:nth-of-type(2) button[data-testid="stBaseButton-primary"] *,
+[data-testid="stTabPanel"]:nth-of-type(2) button[kind="primary"] * {{
     color: {c_beans_txt} !important;
     font-weight: bold !important;
 }}
 
-.tab-gear button[data-testid="stBaseButton-primary"],
-.tab-gear button[kind="primary"],
-.tab-gear div.stButton > button[kind="primary"],
-.tab-gear div.stButton > button[data-testid="stBaseButton-primary"] {{
+/* 3. GEAR タブ (パネル3) */
+[data-testid="stTabPanel"]:nth-of-type(3) button[data-testid="stBaseButton-primary"],
+[data-testid="stTabPanel"]:nth-of-type(3) button[kind="primary"],
+[data-testid="stTabPanel"]:nth-of-type(3) div.stButton > button[kind="primary"] {{
     background-color: {c_gear} !important;
     border-color: {c_gear} !important;
     color: {c_gear_txt} !important;
 }}
-.tab-gear button[data-testid="stBaseButton-primary"] *,
-.tab-gear button[kind="primary"] *,
-.tab-gear div.stButton > button[kind="primary"] *,
-.tab-gear div.stButton > button[data-testid="stBaseButton-primary"] * {{
+[data-testid="stTabPanel"]:nth-of-type(3) button[data-testid="stBaseButton-primary"] *,
+[data-testid="stTabPanel"]:nth-of-type(3) button[kind="primary"] * {{
     color: {c_gear_txt} !important;
     font-weight: bold !important;
 }}
 
-.tab-logs button[data-testid="stBaseButton-primary"],
-.tab-logs button[kind="primary"],
-.tab-logs div.stButton > button[kind="primary"],
-.tab-logs div.stButton > button[data-testid="stBaseButton-primary"] {{
+/* 4. LOGS タブ (パネル4) */
+[data-testid="stTabPanel"]:nth-of-type(4) button[data-testid="stBaseButton-primary"],
+[data-testid="stTabPanel"]:nth-of-type(4) button[kind="primary"],
+[data-testid="stTabPanel"]:nth-of-type(4) div.stButton > button[kind="primary"] {{
     background-color: {c_logs} !important;
     border-color: {c_logs} !important;
     color: {c_logs_txt} !important;
 }}
-.tab-logs button[data-testid="stBaseButton-primary"] *,
-.tab-logs button[kind="primary"] *,
-.tab-logs div.stButton > button[kind="primary"] *,
-.tab-logs div.stButton > button[data-testid="stBaseButton-primary"] * {{
+[data-testid="stTabPanel"]:nth-of-type(4) button[data-testid="stBaseButton-primary"] *,
+[data-testid="stTabPanel"]:nth-of-type(4) button[kind="primary"] * {{
     color: {c_logs_txt} !important;
     font-weight: bold !important;
 }}
 
-.tab-system button[data-testid="stBaseButton-primary"],
-.tab-system button[kind="primary"],
-.tab-system div.stButton > button[kind="primary"],
-.tab-system div.stButton > button[data-testid="stBaseButton-primary"] {{
+/* 5. SYSTEM タブ (パネル5) */
+[data-testid="stTabPanel"]:nth-of-type(5) button[data-testid="stBaseButton-primary"],
+[data-testid="stTabPanel"]:nth-of-type(5) button[kind="primary"],
+[data-testid="stTabPanel"]:nth-of-type(5) div.stButton > button[kind="primary"] {{
     background-color: {c_system} !important;
     border-color: {c_system} !important;
     color: {c_system_txt} !important;
 }}
-.tab-system button[data-testid="stBaseButton-primary"] *,
-.tab-system button[kind="primary"] *,
-.tab-system div.stButton > button[kind="primary"] *,
-.tab-system div.stButton > button[data-testid="stBaseButton-primary"] * {{
+[data-testid="stTabPanel"]:nth-of-type(5) button[data-testid="stBaseButton-primary"] *,
+[data-testid="stTabPanel"]:nth-of-type(5) button[kind="primary"] * {{
     color: {c_system_txt} !important;
     font-weight: bold !important;
 }}
 
-/* --- スライダー＆タグのテーマカラー適用 --- */
-.tab-drip [data-baseweb="slider"] div[role="slider"] {{ background-color: {c_drip} !important; border-color: {c_drip} !important; }}
-.tab-drip [data-baseweb="slider"] > div > div > div {{ background-color: {c_drip} !important; }}
+/* スライダー＆タグのテーマカラー適用 */
+[data-testid="stTabPanel"]:nth-of-type(1) [data-baseweb="slider"] div[role="slider"] {{ background-color: {c_drip} !important; border-color: {c_drip} !important; }}
+[data-testid="stTabPanel"]:nth-of-type(1) [data-baseweb="slider"] > div > div > div {{ background-color: {c_drip} !important; }}
 
-.tab-drip span[data-baseweb="tag"] {{ background-color: {c_drip} !important; border-color: {c_drip} !important; }}
-.tab-drip span[data-baseweb="tag"] span, 
-.tab-drip span[data-baseweb="tag"] div, 
-.tab-drip span[data-baseweb="tag"] svg {{ color: {c_drip_txt} !important; fill: {c_drip_txt} !important; font-weight: bold !important; }}
+[data-testid="stTabPanel"]:nth-of-type(1) span[data-baseweb="tag"] {{ background-color: {c_drip} !important; border-color: {c_drip} !important; }}
+[data-testid="stTabPanel"]:nth-of-type(1) span[data-baseweb="tag"] span, 
+[data-testid="stTabPanel"]:nth-of-type(1) span[data-baseweb="tag"] div, 
+[data-testid="stTabPanel"]:nth-of-type(1) span[data-baseweb="tag"] svg {{ color: {c_drip_txt} !important; fill: {c_drip_txt} !important; font-weight: bold !important; }}
 
 /* メトリック・カード表示 */
 div[data-testid="stMetric"] {{
@@ -250,11 +239,11 @@ div[data-testid="stMetric"] {{
 }}
 
 div[data-testid="stMetricLabel"] {{ color: {sub_text_color} !important; font-size: 0.75rem !important; }}
-.tab-drip div[data-testid="stMetricValue"] {{ color: {c_drip} !important; }}
-.tab-beans div[data-testid="stMetricValue"] {{ color: {c_beans} !important; }}
-.tab-gear div[data-testid="stMetricValue"] {{ color: {c_gear} !important; }}
-.tab-logs div[data-testid="stMetricValue"] {{ color: {c_logs} !important; }}
-.tab-system div[data-testid="stMetricValue"] {{ color: {c_system} !important; }}
+[data-testid="stTabPanel"]:nth-of-type(1) div[data-testid="stMetricValue"] {{ color: {c_drip} !important; }}
+[data-testid="stTabPanel"]:nth-of-type(2) div[data-testid="stMetricValue"] {{ color: {c_beans} !important; }}
+[data-testid="stTabPanel"]:nth-of-type(3) div[data-testid="stMetricValue"] {{ color: {c_gear} !important; }}
+[data-testid="stTabPanel"]:nth-of-type(4) div[data-testid="stMetricValue"] {{ color: {c_logs} !important; }}
+[data-testid="stTabPanel"]:nth-of-type(5) div[data-testid="stMetricValue"] {{ color: {c_system} !important; }}
 
 /* 入力フォーム類 */
 input, select, textarea, div[data-baseweb="select"] {{
@@ -278,26 +267,16 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs(["DRIP", "BEANS", "GEAR", "LOGS", "SYSTEM
 from views import drip_view, beans_view, equip_view, history_view, system_view
 
 with tab1:
-    st.markdown('<div class="tab-drip">', unsafe_allow_html=True)
     drip_view.render()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with tab2:
-    st.markdown('<div class="tab-beans">', unsafe_allow_html=True)
     beans_view.render()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with tab3:
-    st.markdown('<div class="tab-gear">', unsafe_allow_html=True)
     equip_view.render()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with tab4:
-    st.markdown('<div class="tab-logs">', unsafe_allow_html=True)
     history_view.render()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with tab5:
-    st.markdown('<div class="tab-system">', unsafe_allow_html=True)
     system_view.render()
-    st.markdown('</div>', unsafe_allow_html=True)
