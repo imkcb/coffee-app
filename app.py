@@ -1,6 +1,7 @@
 import os
 import datetime
-import streamlit as st
+import Streamlit as st
+from Streamlit.runtime.scriptrunner import get_script_run_ctx
 
 # Streamlit CloudのSecretsをプログラム側の環境変数へ反映
 for k in ["SUPABASE_URL", "SUPABASE_KEY", "GEMINI_API_KEY"]:
@@ -11,20 +12,31 @@ import db
 import ai
 import prompts
 
+# 接続ごとの一意なセッションIDを取得（複数人利用時の個別識別子）
+def get_session_id():
+    ctx = get_script_run_ctx()
+    if ctx:
+        return ctx.session_id
+    return "default_session"
+
+user_session_id = get_session_id()
+
 # 1. データの初期取得
 beans_data = db.get_beans()
 equipment_data = db.get_equipment()
 drip_logs_data = db.get_drip_logs()
 
 # ドラフト（未評価仮保存）と確定済み履歴の分離
-draft_logs = []
+my_draft_log = None
 confirmed_logs = []
 
 if drip_logs_data:
     for log in drip_logs_data:
         data_p = log.get("data") or {}
         if data_p.get("is_draft") is True:
-            draft_logs.append(log)
+            # 自分のセッションIDに一致するドラフトのみ抽出（他人のドラフトと隔離）
+            if data_p.get("session_id") == user_session_id:
+                my_draft_log = log
         else:
             confirmed_logs.append(log)
 
@@ -44,22 +56,21 @@ if "coffee_type" not in st.session_state:
 if "water_per_cup" not in st.session_state:
     st.session_state["water_per_cup"] = 300
 
-# リロード時のドラフト復元処理
-if "current_recipe" not in st.session_state and draft_logs:
-    latest_draft = draft_logs[-1]
-    draft_data = latest_draft.get("data") or {}
+# リロード時、自分専用のドラフトが存在すれば復元処理
+if "current_recipe" not in st.session_state and my_draft_log:
+    draft_data = my_draft_log.get("data") or {}
     if draft_data.get("recipe"):
         st.session_state["current_recipe"] = draft_data.get("recipe")
         st.session_state["current_drip_params"] = {
             "bean_name": draft_data.get("bean_name"),
-            "bean_id": latest_draft.get("bean_id"),
-            "flavor_profile": latest_draft.get("flavor_profile"),
-            "cup_count": latest_draft.get("cup_count", 1),
-            "roast_date": latest_draft.get("roasted_date") or "未指定",
+            "bean_id": my_draft_log.get("bean_id"),
+            "flavor_profile": my_draft_log.get("flavor_profile"),
+            "cup_count": my_draft_log.get("cup_count", 1),
+            "roast_date": my_draft_log.get("roasted_date") or "未指定",
             "coffee_type": draft_data.get("coffee_type", "ホット"),
             "water_per_cup": draft_data.get("water_per_cup", 300)
         }
-        st.session_state["draft_log_id"] = latest_draft.get("id")
+        st.session_state["draft_log_id"] = my_draft_log.get("id")
 
 # 3. アプリタイトルと4タブ構成の定義
 st.title("BARIS⚡太郎くん")
@@ -189,7 +200,7 @@ with tab1:
                     "coffee_type": selected_coffee_type, "water_per_cup": selected_water_per_cup
                 }
                 
-                # ドラフト（DRAFT）として1件のみ上書き保存
+                # 自分専用（session_id 紐付け）のドラフトとして上書き保存
                 draft_payload = {
                     "bean_id": chosen_bean_id,
                     "flavor_profile": flavor_profile,
@@ -198,13 +209,14 @@ with tab1:
                     "grind_setting": recipe_data.get('grind_setting', '-'),
                     "data": {
                         "is_draft": True,
+                        "session_id": user_session_id,  # ユーザー識別キー
                         "bean_name": bean_choice, "recipe": recipe_data,
                         "coffee_type": selected_coffee_type, "water_per_cup": selected_water_per_cup
                     }
                 }
                 
                 try:
-                    existing_draft_id = st.session_state.get("draft_log_id") or (draft_logs[-1].get("id") if draft_logs else None)
+                    existing_draft_id = st.session_state.get("draft_log_id") or (my_draft_log.get("id") if my_draft_log else None)
                     if existing_draft_id:
                         db.update_drip_log(existing_draft_id, draft_payload)
                     else:
@@ -282,6 +294,7 @@ with tab1:
                     "grind_setting": recipe.get('grind_setting', '-'),
                     "data": {
                         "is_draft": False,  # ドラフト解除（確定ログ化）
+                        "session_id": user_session_id,
                         "bean_name": params.get("bean_name"), "recipe": recipe,
                         "rating": drip_rating, "acid_level": acid_level, "bitter_level": bitter_level,
                         "actual_time": actual_time, "taste_issues": drip_issues,
@@ -290,7 +303,7 @@ with tab1:
                     }
                 }
                 
-                draft_id = st.session_state.get("draft_log_id") or (draft_logs[-1].get("id") if draft_logs else None)
+                draft_id = st.session_state.get("draft_log_id") or (my_draft_log.get("id") if my_draft_log else None)
                 if draft_id:
                     db.update_drip_log(draft_id, final_payload)
                 else:
