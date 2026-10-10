@@ -1,5 +1,9 @@
+import sys
 import os
 import streamlit as st
+
+# カレントディレクトリをPythonの探索パスに明示的追加（ImportError対策）
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Streamlit CloudのSecretsをプログラム側の環境変数へ反映
 for k in ["SUPABASE_URL", "SUPABASE_KEY", "GEMINI_API_KEY"]:
