@@ -60,15 +60,15 @@ else:  # DARK または SYSTEM
     btn_border = "#404040"
     btn_text = "#FFFFFF"
     
-    # DARKモード用 蛍光アクセント
+    # DARKモード用 蛍光アクセント (オンカラーは少し和らいだ Charcoal #1A1A1A)
     c_drip = "#00FF66"    # 蛍光黄緑
-    c_drip_txt = "#000000"
+    c_drip_txt = "#1A1A1A"
     c_beans = "#FF007F"   # 蛍光ピンク
     c_beans_txt = "#FFFFFF"
     c_gear = "#FFEE00"    # 蛍光イエロー
-    c_gear_txt = "#000000"
+    c_gear_txt = "#1A1A1A"
     c_logs = "#00E5FF"    # 蛍光ブルー
-    c_logs_txt = "#000000"
+    c_logs_txt = "#1A1A1A"
     c_system = "#B026FF"  # 蛍光パープル
     c_system_txt = "#FFFFFF"
 
@@ -159,11 +159,9 @@ div[data-baseweb="tab-highlight-point"] {{
     border-color: {text_color} !important;
 }}
 
-/* ========================================================= */
-/* --- マーカー依存型 絶対的タブ別スタイル定義 (:has セレクタ) --- */
-/* ========================================================= */
+/* --- マーカー依存型 タブ別スタイル定義 (:has セレクタ) --- */
 
-/* 1. DRIP タブ (蛍光黄緑 #00FF66) */
+/* 1. DRIP タブ (蛍光黄緑 #00FF66 / 文字色: チャコール #1A1A1A) */
 .stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) button[data-testid="stBaseButton-primary"],
 .stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) button[kind="primary"] {{
     background-color: {c_drip} !important;
@@ -174,12 +172,25 @@ div[data-baseweb="tab-highlight-point"] {{
 .stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) button[data-testid="stBaseButton-primary"] *,
 .stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) button[kind="primary"] * {{
     color: {c_drip_txt} !important;
-    font-weight: bold !important;
+    font-weight: 700 !important;
 }}
 .stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) [data-baseweb="slider"] div[role="slider"] {{ background-color: {c_drip} !important; border-color: {c_drip} !important; }}
 .stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) [data-baseweb="slider"] > div > div > div {{ background-color: {c_drip} !important; }}
-.stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) span[data-baseweb="tag"] {{ background-color: {c_drip} !important; border-color: {c_drip} !important; }}
-.stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) span[data-baseweb="tag"] * {{ color: {c_drip_txt} !important; fill: {c_drip_txt} !important; font-weight: bold !important; }}
+
+/* マルチセレクトタグ内部（文字・アイコン）のチャコール色化 (#1A1A1A) */
+.stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) span[data-baseweb="tag"] {{
+    background-color: {c_drip} !important;
+    border-color: {c_drip} !important;
+}}
+.stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) span[data-baseweb="tag"] *,
+.stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) span[data-baseweb="tag"] span,
+.stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) span[data-baseweb="tag"] div,
+.stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) span[data-baseweb="tag"] svg,
+.stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) span[data-baseweb="tag"] path {{
+    color: {c_drip_txt} !important;
+    fill: {c_drip_txt} !important;
+    font-weight: 700 !important;
+}}
 .stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) div[data-testid="stMetricValue"] {{ color: {c_drip} !important; }}
 
 /* 2. BEANS タブ (蛍光ピンク #FF007F) */
@@ -193,11 +204,11 @@ div[data-baseweb="tab-highlight-point"] {{
 .stApp div[data-testid="stTabPanel"]:has(.beans-tab-marker) button[data-testid="stBaseButton-primary"] *,
 .stApp div[data-testid="stTabPanel"]:has(.beans-tab-marker) button[kind="primary"] * {{
     color: {c_beans_txt} !important;
-    font-weight: bold !important;
+    font-weight: 700 !important;
 }}
 .stApp div[data-testid="stTabPanel"]:has(.beans-tab-marker) div[data-testid="stMetricValue"] {{ color: {c_beans} !important; }}
 
-/* 3. GEAR タブ (蛍光イエロー #FFEE00) */
+/* 3. GEAR タブ (蛍光イエロー #FFEE00 / 文字色: #1A1A1A) */
 .stApp div[data-testid="stTabPanel"]:has(.gear-tab-marker) button[data-testid="stBaseButton-primary"],
 .stApp div[data-testid="stTabPanel"]:has(.gear-tab-marker) button[kind="primary"] {{
     background-color: {c_gear} !important;
@@ -208,11 +219,11 @@ div[data-baseweb="tab-highlight-point"] {{
 .stApp div[data-testid="stTabPanel"]:has(.gear-tab-marker) button[data-testid="stBaseButton-primary"] *,
 .stApp div[data-testid="stTabPanel"]:has(.gear-tab-marker) button[kind="primary"] * {{
     color: {c_gear_txt} !important;
-    font-weight: bold !important;
+    font-weight: 700 !important;
 }}
 .stApp div[data-testid="stTabPanel"]:has(.gear-tab-marker) div[data-testid="stMetricValue"] {{ color: {c_gear} !important; }}
 
-/* 4. LOGS タブ (蛍光ブルー #00E5FF) */
+/* 4. LOGS タブ (蛍光ブルー #00E5FF / 文字色: #1A1A1A) */
 .stApp div[data-testid="stTabPanel"]:has(.logs-tab-marker) button[data-testid="stBaseButton-primary"],
 .stApp div[data-testid="stTabPanel"]:has(.logs-tab-marker) button[kind="primary"] {{
     background-color: {c_logs} !important;
@@ -223,7 +234,7 @@ div[data-baseweb="tab-highlight-point"] {{
 .stApp div[data-testid="stTabPanel"]:has(.logs-tab-marker) button[data-testid="stBaseButton-primary"] *,
 .stApp div[data-testid="stTabPanel"]:has(.logs-tab-marker) button[kind="primary"] * {{
     color: {c_logs_txt} !important;
-    font-weight: bold !important;
+    font-weight: 700 !important;
 }}
 .stApp div[data-testid="stTabPanel"]:has(.logs-tab-marker) div[data-testid="stMetricValue"] {{ color: {c_logs} !important; }}
 
@@ -238,7 +249,7 @@ div[data-baseweb="tab-highlight-point"] {{
 .stApp div[data-testid="stTabPanel"]:has(.system-tab-marker) button[data-testid="stBaseButton-primary"] *,
 .stApp div[data-testid="stTabPanel"]:has(.system-tab-marker) button[kind="primary"] * {{
     color: {c_system_txt} !important;
-    font-weight: bold !important;
+    font-weight: 700 !important;
 }}
 .stApp div[data-testid="stTabPanel"]:has(.system-tab-marker) div[data-testid="stMetricValue"] {{ color: {c_system} !important; }}
 
