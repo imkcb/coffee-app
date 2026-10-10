@@ -136,7 +136,7 @@ def render():
     st.markdown("#### 1. TYPE")
     type_col1, type_col2 = st.columns(2)
     with type_col1:
-        is_type_hot = (st.session_state["sel_type"] == "HOT")
+        is_type_hot = (st.session_state["sel_type"] == "HOT") and (st.session_state["wizard_step"] > 1)
         if st.button("HOT", key="btn_type_hot", use_container_width=True, type="primary" if is_type_hot else "secondary"):
             st.session_state["sel_type"] = "HOT"
             if st.session_state["wizard_step"] == 1:
@@ -144,7 +144,7 @@ def render():
             st.session_state["scroll_target"] = "step-2"
             st.rerun()
     with type_col2:
-        is_type_iced = (st.session_state["sel_type"] == "ICED")
+        is_type_iced = (st.session_state["sel_type"] == "ICED") and (st.session_state["wizard_step"] > 1)
         if st.button("ICED", key="btn_type_iced", use_container_width=True, type="primary" if is_type_iced else "secondary"):
             st.session_state["sel_type"] = "ICED"
             if st.session_state["wizard_step"] == 1:
@@ -164,7 +164,7 @@ def render():
         for idx, shop_item in enumerate(shop_options):
             col_target = shop_cols[idx % len(shop_cols)]
             with col_target:
-                is_selected = (st.session_state["sel_shop"] == shop_item)
+                is_selected = (st.session_state["sel_shop"] == shop_item) and (st.session_state["wizard_step"] > 2)
                 if st.button(shop_item, key=f"btn_shop_{shop_item}", use_container_width=True, type="primary" if is_selected else "secondary"):
                     st.session_state["sel_shop"] = shop_item
                     if st.session_state["wizard_step"] == 2:
@@ -183,7 +183,7 @@ def render():
             r_cols = st.columns(3)
             for idx, r_lvl in enumerate(roast_levels):
                 with r_cols[idx]:
-                    is_selected = (st.session_state["sel_roast_level"] == r_lvl)
+                    is_selected = (st.session_state["sel_roast_level"] == r_lvl) and (st.session_state["wizard_step"] > 3)
                     if st.button(r_lvl, key=f"btn_roast_{r_lvl}", use_container_width=True, type="primary" if is_selected else "secondary"):
                         st.session_state["sel_roast_level"] = r_lvl
                         st.session_state["sel_bean"] = f"Custom Bean ({r_lvl})"
@@ -208,7 +208,7 @@ def render():
             for idx, b_name in enumerate(filtered_bean_names):
                 col_target = bean_cols[idx % len(bean_cols)]
                 with col_target:
-                    is_selected = (st.session_state["sel_bean"] == b_name)
+                    is_selected = (st.session_state["sel_bean"] == b_name) and (st.session_state["wizard_step"] > 3)
                     if st.button(b_name, key=f"btn_bean_{b_name}", use_container_width=True, type="primary" if is_selected else "secondary"):
                         st.session_state["sel_bean"] = b_name
                         if st.session_state["wizard_step"] == 3:
@@ -225,7 +225,7 @@ def render():
         flv_cols = st.columns(3)
         for idx, flv in enumerate(flavors):
             with flv_cols[idx]:
-                is_selected = (st.session_state["sel_flavor"] == flv)
+                is_selected = (st.session_state["sel_flavor"] == flv) and (st.session_state["wizard_step"] > 4)
                 if st.button(flv, key=f"btn_flv_{flv}", use_container_width=True, type="primary" if is_selected else "secondary"):
                     st.session_state["sel_flavor"] = flv
                     if st.session_state["wizard_step"] == 4:
@@ -399,7 +399,7 @@ def render():
         if ice_val and ice_val != 'なし' and ice_val != '-':
             st.info(f"PRE-ICE: {ice_val}")
 
-        # --- STEPS 表示（改行＆フォントサイズ変更） ---
+        # --- STEPS 表示 ---
         st.markdown("### STEPS")
         steps = recipe.get('recipe_steps', [])
         if steps and isinstance(steps, list):

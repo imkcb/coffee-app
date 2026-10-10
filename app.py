@@ -61,18 +61,18 @@ else:  # DARK または SYSTEM
     btn_text = "#FFFFFF"
     
     # DARKモード用 蛍光アクセント
-    c_drip = "#00FF66"    # Neon Green
+    c_drip = "#00FF66"    # 蛍光黄緑 (Neon Green)
     c_drip_txt = "#000000"
-    c_beans = "#FF007F"   # Neon Pink
+    c_beans = "#FF007F"   # 蛍光ピンク
     c_beans_txt = "#FFFFFF"
-    c_gear = "#FFEE00"    # Neon Yellow
+    c_gear = "#FFEE00"    # 蛍光イエロー
     c_gear_txt = "#000000"
-    c_logs = "#00E5FF"    # Neon Cyan
+    c_logs = "#00E5FF"    # 蛍光ブルー
     c_logs_txt = "#000000"
-    c_system = "#B026FF"  # Neon Purple
+    c_system = "#B026FF"  # 蛍光パープル
     c_system_txt = "#FFFFFF"
 
-# 2. GLOBAL & TAB-PANEL DIRECT CSS
+# 2. GLOBAL & TAB-PANEL CSS
 elektron_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
@@ -127,15 +127,16 @@ label, .stMarkdown p, [data-testid="stWidgetLabel"] p {{
     padding: 8px 12px !important;
 }}
 
-/* タブ選択時のアクセントライン */
+/* タブ選択時のアンダーライン表示 */
 [data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(1)[aria-selected="true"] {{ color: {c_drip} !important; border-bottom: 2px solid {c_drip} !important; }}
 [data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(2)[aria-selected="true"] {{ color: {c_beans} !important; border-bottom: 2px solid {c_beans} !important; }}
 [data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(3)[aria-selected="true"] {{ color: {c_gear} !important; border-bottom: 2px solid {c_gear} !important; }}
 [data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(4)[aria-selected="true"] {{ color: {c_logs} !important; border-bottom: 2px solid {c_logs} !important; }}
 [data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(5)[aria-selected="true"] {{ color: {c_system} !important; border-bottom: 2px solid {c_system} !important; }}
 
-/* 未選択ボタン基本構造 */
-div.stButton > button {{
+/* --- 初期（未選択）ボタン：無色（シックなダーク背景＋枠線） --- */
+div.stButton > button,
+button[data-testid="stBaseButton-secondary"] {{
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     font-weight: 600 !important;
     font-size: 0.9rem !important;
@@ -147,11 +148,29 @@ div.stButton > button {{
     transition: all 0.15s ease;
 }}
 
-div.stButton > button:hover {{ border-color: {text_color} !important; }}
+div.stButton > button:hover,
+button[data-testid="stBaseButton-secondary"]:hover {{
+    border-color: {text_color} !important;
+}}
 
-/* --- 各タブパネル内の PRIMARY ボタン（選択状態）の完全直接着色 --- */
+/* --- デフォルトプライマリボタン（フォールバック：蛍光黄緑） --- */
+button[data-testid="stBaseButton-primary"],
+button[kind="primary"],
+div.stButton > button[kind="primary"] {{
+    background-color: {c_drip} !important;
+    border-color: {c_drip} !important;
+    color: {c_drip_txt} !important;
+}}
 
-/* 1. DRIP タブ (パネル1) */
+button[data-testid="stBaseButton-primary"] *,
+button[kind="primary"] * {{
+    color: {c_drip_txt} !important;
+    font-weight: bold !important;
+}}
+
+/* --- 各タブ（1〜5）ごとの選択時テーマカラー指定 --- */
+
+/* 1. DRIP タブ（蛍光黄緑 #00FF66） */
 [data-testid="stTabPanel"]:nth-of-type(1) button[data-testid="stBaseButton-primary"],
 [data-testid="stTabPanel"]:nth-of-type(1) button[kind="primary"],
 [data-testid="stTabPanel"]:nth-of-type(1) div.stButton > button[kind="primary"] {{
@@ -165,7 +184,7 @@ div.stButton > button:hover {{ border-color: {text_color} !important; }}
     font-weight: bold !important;
 }}
 
-/* 2. BEANS タブ (パネル2) */
+/* 2. BEANS タブ（蛍光ピンク #FF007F） */
 [data-testid="stTabPanel"]:nth-of-type(2) button[data-testid="stBaseButton-primary"],
 [data-testid="stTabPanel"]:nth-of-type(2) button[kind="primary"],
 [data-testid="stTabPanel"]:nth-of-type(2) div.stButton > button[kind="primary"] {{
@@ -179,7 +198,7 @@ div.stButton > button:hover {{ border-color: {text_color} !important; }}
     font-weight: bold !important;
 }}
 
-/* 3. GEAR タブ (パネル3) */
+/* 3. GEAR タブ（蛍光イエロー #FFEE00） */
 [data-testid="stTabPanel"]:nth-of-type(3) button[data-testid="stBaseButton-primary"],
 [data-testid="stTabPanel"]:nth-of-type(3) button[kind="primary"],
 [data-testid="stTabPanel"]:nth-of-type(3) div.stButton > button[kind="primary"] {{
@@ -193,7 +212,7 @@ div.stButton > button:hover {{ border-color: {text_color} !important; }}
     font-weight: bold !important;
 }}
 
-/* 4. LOGS タブ (パネル4) */
+/* 4. LOGS タブ（蛍光ブルー #00E5FF） */
 [data-testid="stTabPanel"]:nth-of-type(4) button[data-testid="stBaseButton-primary"],
 [data-testid="stTabPanel"]:nth-of-type(4) button[kind="primary"],
 [data-testid="stTabPanel"]:nth-of-type(4) div.stButton > button[kind="primary"] {{
@@ -207,7 +226,7 @@ div.stButton > button:hover {{ border-color: {text_color} !important; }}
     font-weight: bold !important;
 }}
 
-/* 5. SYSTEM タブ (パネル5) */
+/* 5. SYSTEM タブ（蛍光パープル #B026FF） */
 [data-testid="stTabPanel"]:nth-of-type(5) button[data-testid="stBaseButton-primary"],
 [data-testid="stTabPanel"]:nth-of-type(5) button[kind="primary"],
 [data-testid="stTabPanel"]:nth-of-type(5) div.stButton > button[kind="primary"] {{
@@ -221,7 +240,7 @@ div.stButton > button:hover {{ border-color: {text_color} !important; }}
     font-weight: bold !important;
 }}
 
-/* スライダー＆タグのテーマカラー適用 */
+/* スライダー＆マルチセレクトタグのテーマカラー適用 */
 [data-testid="stTabPanel"]:nth-of-type(1) [data-baseweb="slider"] div[role="slider"] {{ background-color: {c_drip} !important; border-color: {c_drip} !important; }}
 [data-testid="stTabPanel"]:nth-of-type(1) [data-baseweb="slider"] > div > div > div {{ background-color: {c_drip} !important; }}
 
@@ -230,7 +249,17 @@ div.stButton > button:hover {{ border-color: {text_color} !important; }}
 [data-testid="stTabPanel"]:nth-of-type(1) span[data-baseweb="tag"] div, 
 [data-testid="stTabPanel"]:nth-of-type(1) span[data-baseweb="tag"] svg {{ color: {c_drip_txt} !important; fill: {c_drip_txt} !important; font-weight: bold !important; }}
 
-/* メトリック・カード表示 */
+/* READY通知バナーの黒背景×蛍光黄緑枠化 */
+div[data-testid="stNotification"] {{
+    background-color: #0D0D0D !important;
+    border: 1px solid {c_drip} !important;
+    border-radius: 4px !important;
+}}
+div[data-testid="stNotification"] * {{
+    color: {c_drip} !important;
+}}
+
+/* メトリック表示 */
 div[data-testid="stMetric"] {{
     border: 1px solid {border_color} !important;
     background-color: {card_bg} !important;
