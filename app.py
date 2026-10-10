@@ -1,7 +1,7 @@
 import os
 import datetime
-import Streamlit as st
-from Streamlit.runtime.scriptrunner import get_script_run_ctx
+import streamlit as st
+from streamlit.runtime.scriptrunner import get_script_run_ctx
 
 # Streamlit CloudのSecretsをプログラム側の環境変数へ反映
 for k in ["SUPABASE_URL", "SUPABASE_KEY", "GEMINI_API_KEY"]:
