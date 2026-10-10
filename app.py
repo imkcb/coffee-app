@@ -134,8 +134,9 @@ label, .stMarkdown p, [data-testid="stWidgetLabel"] p {{
 [data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(4)[aria-selected="true"] {{ color: {c_logs} !important; border-bottom: 2px solid {c_logs} !important; }}
 [data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(5)[aria-selected="true"] {{ color: {c_system} !important; border-bottom: 2px solid {c_system} !important; }}
 
-/* ボタン基本構造 */
-div.stButton > button {{
+/* 未選択ボタン基本構造 */
+div.stButton > button,
+button[data-testid="stBaseButton-secondary"] {{
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     font-weight: 600 !important;
     font-size: 0.9rem !important;
@@ -147,46 +148,98 @@ div.stButton > button {{
     transition: all 0.15s ease;
 }}
 
-div.stButton > button:hover {{ border-color: {text_color} !important; }}
+div.stButton > button:hover,
+button[data-testid="stBaseButton-secondary"]:hover {{ border-color: {text_color} !important; }}
 
-/* --- タブ別 PRIMARY ボタン選択カラー（全タブ適用） --- */
-.tab-drip div.stButton > button[kind="primary"] {{ background-color: {c_drip} !important; border-color: {c_drip} !important; color: {c_drip_txt} !important; font-weight: bold !important; }}
-.tab-beans div.stButton > button[kind="primary"] {{ background-color: {c_beans} !important; border-color: {c_beans} !important; color: {c_beans_txt} !important; font-weight: bold !important; }}
-.tab-gear div.stButton > button[kind="primary"] {{ background-color: {c_gear} !important; border-color: {c_gear} !important; color: {c_gear_txt} !important; font-weight: bold !important; }}
-.tab-logs div.stButton > button[kind="primary"] {{ background-color: {c_logs} !important; border-color: {c_logs} !important; color: {c_logs_txt} !important; font-weight: bold !important; }}
-.tab-system div.stButton > button[kind="primary"] {{ background-color: {c_system} !important; border-color: {c_system} !important; color: {c_system_txt} !important; font-weight: bold !important; }}
+/* --- PRIMARYボタン（選択状態）の全ターゲット網羅と完全テーマカラー着色 --- */
+.tab-drip button[data-testid="stBaseButton-primary"],
+.tab-drip button[kind="primary"],
+.tab-drip div.stButton > button[kind="primary"],
+.tab-drip div.stButton > button[data-testid="stBaseButton-primary"] {{
+    background-color: {c_drip} !important;
+    border-color: {c_drip} !important;
+    color: {c_drip_txt} !important;
+}}
+.tab-drip button[data-testid="stBaseButton-primary"] *,
+.tab-drip button[kind="primary"] *,
+.tab-drip div.stButton > button[kind="primary"] *,
+.tab-drip div.stButton > button[data-testid="stBaseButton-primary"] * {{
+    color: {c_drip_txt} !important;
+    font-weight: bold !important;
+}}
 
-/* --- スライダー（満足度・酸味・ボディ）の赤色修正＆テーマカラー適用 --- */
+.tab-beans button[data-testid="stBaseButton-primary"],
+.tab-beans button[kind="primary"],
+.tab-beans div.stButton > button[kind="primary"],
+.tab-beans div.stButton > button[data-testid="stBaseButton-primary"] {{
+    background-color: {c_beans} !important;
+    border-color: {c_beans} !important;
+    color: {c_beans_txt} !important;
+}}
+.tab-beans button[data-testid="stBaseButton-primary"] *,
+.tab-beans button[kind="primary"] *,
+.tab-beans div.stButton > button[kind="primary"] *,
+.tab-beans div.stButton > button[data-testid="stBaseButton-primary"] * {{
+    color: {c_beans_txt} !important;
+    font-weight: bold !important;
+}}
+
+.tab-gear button[data-testid="stBaseButton-primary"],
+.tab-gear button[kind="primary"],
+.tab-gear div.stButton > button[kind="primary"],
+.tab-gear div.stButton > button[data-testid="stBaseButton-primary"] {{
+    background-color: {c_gear} !important;
+    border-color: {c_gear} !important;
+    color: {c_gear_txt} !important;
+}}
+.tab-gear button[data-testid="stBaseButton-primary"] *,
+.tab-gear button[kind="primary"] *,
+.tab-gear div.stButton > button[kind="primary"] *,
+.tab-gear div.stButton > button[data-testid="stBaseButton-primary"] * {{
+    color: {c_gear_txt} !important;
+    font-weight: bold !important;
+}}
+
+.tab-logs button[data-testid="stBaseButton-primary"],
+.tab-logs button[kind="primary"],
+.tab-logs div.stButton > button[kind="primary"],
+.tab-logs div.stButton > button[data-testid="stBaseButton-primary"] {{
+    background-color: {c_logs} !important;
+    border-color: {c_logs} !important;
+    color: {c_logs_txt} !important;
+}}
+.tab-logs button[data-testid="stBaseButton-primary"] *,
+.tab-logs button[kind="primary"] *,
+.tab-logs div.stButton > button[kind="primary"] *,
+.tab-logs div.stButton > button[data-testid="stBaseButton-primary"] * {{
+    color: {c_logs_txt} !important;
+    font-weight: bold !important;
+}}
+
+.tab-system button[data-testid="stBaseButton-primary"],
+.tab-system button[kind="primary"],
+.tab-system div.stButton > button[kind="primary"],
+.tab-system div.stButton > button[data-testid="stBaseButton-primary"] {{
+    background-color: {c_system} !important;
+    border-color: {c_system} !important;
+    color: {c_system_txt} !important;
+}}
+.tab-system button[data-testid="stBaseButton-primary"] *,
+.tab-system button[kind="primary"] *,
+.tab-system div.stButton > button[kind="primary"] *,
+.tab-system div.stButton > button[data-testid="stBaseButton-primary"] * {{
+    color: {c_system_txt} !important;
+    font-weight: bold !important;
+}}
+
+/* --- スライダー＆タグのテーマカラー適用 --- */
 .tab-drip [data-baseweb="slider"] div[role="slider"] {{ background-color: {c_drip} !important; border-color: {c_drip} !important; }}
 .tab-drip [data-baseweb="slider"] > div > div > div {{ background-color: {c_drip} !important; }}
 
-.tab-beans [data-baseweb="slider"] div[role="slider"] {{ background-color: {c_beans} !important; border-color: {c_beans} !important; }}
-.tab-beans [data-baseweb="slider"] > div > div > div {{ background-color: {c_beans} !important; }}
-
-/* --- マルチセレクトタグの赤色修正＆テーマカラー・文字色調整 --- */
-.tab-drip span[data-baseweb="tag"] {{
-    background-color: {c_drip} !important;
-    border-color: {c_drip} !important;
-}}
+.tab-drip span[data-baseweb="tag"] {{ background-color: {c_drip} !important; border-color: {c_drip} !important; }}
 .tab-drip span[data-baseweb="tag"] span, 
 .tab-drip span[data-baseweb="tag"] div, 
-.tab-drip span[data-baseweb="tag"] svg {{
-    color: {c_drip_txt} !important;
-    fill: {c_drip_txt} !important;
-    font-weight: bold !important;
-}}
-
-.tab-beans span[data-baseweb="tag"] {{
-    background-color: {c_beans} !important;
-    border-color: {c_beans} !important;
-}}
-.tab-beans span[data-baseweb="tag"] span, 
-.tab-beans span[data-baseweb="tag"] div, 
-.tab-beans span[data-baseweb="tag"] svg {{
-    color: {c_beans_txt} !important;
-    fill: {c_beans_txt} !important;
-    font-weight: bold !important;
-}}
+.tab-drip span[data-baseweb="tag"] svg {{ color: {c_drip_txt} !important; fill: {c_drip_txt} !important; font-weight: bold !important; }}
 
 /* メトリック・カード表示 */
 div[data-testid="stMetric"] {{
