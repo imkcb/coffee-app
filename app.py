@@ -105,19 +105,24 @@ with tab1:
             latest_log = past_logs[0]
             log_data = latest_log.get("data") or {}
             rating = log_data.get("rating")
+            acid = log_data.get("acid_level", "適正")
+            bitter = log_data.get("bitter_level", "適正")
+            act_time = log_data.get("actual_time", "")
             raw_issues = log_data.get("taste_issues") or log_data.get("taste_issue") or []
             issues_list = [raw_issues] if isinstance(raw_issues, str) else raw_issues
             raw_goals = log_data.get("target_goals") or log_data.get("target_goal") or []
             goals_list = [raw_goals] if isinstance(raw_goals, str) else raw_goals
             comment = log_data.get("comment", "")
             
-            if rating or issues_list or goals_list:
-                past_feedback_text = (
-                    f"満足度: ★{rating or '未評価'}/5 | "
-                    f"気になった点: [{ '、'.join(issues_list) or '特になし' }] | "
-                    f"改善希望: [{ '、'.join(goals_list) or 'なし' }] | "
-                    f"コメント: {comment or 'なし'}"
-                )
+            feedback_parts = [f"満足度: ★{rating or '未評価'}/5"]
+            if acid != "適正": feedback_parts.append(f"酸味: {acid}")
+            if bitter != "適正": feedback_parts.append(f"苦味・ボディ: {bitter}")
+            if act_time: feedback_parts.append(f"実際の抽出完了時間: {act_time}")
+            if issues_list: feedback_parts.append(f"気になった点: [{ '、'.join(issues_list) }]")
+            if goals_list: feedback_parts.append(f"改善希望: [{ '、'.join(goals_list) }]")
+            if comment: feedback_parts.append(f"コメント: {comment}")
+
+            past_feedback_text = " | ".join(feedback_parts)
 
     if past_feedback_text != "過去の評価なし":
         st.info(f"💡 **この豆の前回のフィードバック**\n{past_feedback_text}\n（今回のAI提案に自動反映されます）")
@@ -193,14 +198,17 @@ with tab1:
             st.json(recipe)
 
         st.divider()
-        st.subheader("📝 今回の抽出評価・フィードバック（任意）")
+        st.subheader("📝 今回の抽出評価・フィードバック（詳細設定）")
         f_col1, f_col2 = st.columns(2)
         with f_col1:
             drip_rating = st.slider("総合満足度", min_value=1, max_value=5, value=3, key="drip_input_rating")
+            acid_level = st.select_slider("酸味の印象", options=["弱すぎる", "やや弱め", "適正", "やや強め", "強すぎる"], value="適正", key="drip_input_acid")
+            bitter_level = st.select_slider("苦味・ボディの印象", options=["軽すぎる", "やや軽め", "適正", "やや重め", "重すぎる"], value="適正", key="drip_input_bitter")
             drip_issues = st.multiselect("味の気になった点（複数選択可）", prompts.TASTE_ISSUES_OPTIONS, default=["問題なし（バランス良好）"], key="drip_input_issues")
         with f_col2:
+            actual_time = st.text_input("実際の落ちきり完了時間（任意）", placeholder="例: 2:45", key="drip_input_actual_time")
             drip_goals = st.multiselect("次回どうしたいか（複数選択可）", prompts.TARGET_GOALS_OPTIONS, default=["現状維持"], key="drip_input_goals")
-            drip_comment = st.text_input("自由コメント（任意）", placeholder="例: 後味に少し渋みが残る", key="drip_input_comment")
+            drip_comment = st.text_input("自由コメント（任意）", placeholder="例: 後半の落ちが遅く渋みが少し出た", key="drip_input_comment")
         
         if st.button("💾 このレシピと評価を保存する", key="btn_save_recipe_with_eval", use_container_width=True):
             try:
@@ -212,12 +220,13 @@ with tab1:
                     "grind_setting": recipe.get('grind_setting', '-'),
                     "data": {
                         "bean_name": params.get("bean_name"), "recipe": recipe,
-                        "rating": drip_rating, "taste_issues": drip_issues,
+                        "rating": drip_rating, "acid_level": acid_level, "bitter_level": bitter_level,
+                        "actual_time": actual_time, "taste_issues": drip_issues,
                         "target_goals": drip_goals, "comment": drip_comment,
                         "coffee_type": params.get("coffee_type"), "water_per_cup": params.get("water_per_cup")
                     }
                 })
-                st.success("レシピと評価を正常に保存しました！")
+                st.success("レシピと詳細評価を正常に保存しました！")
                 del st.session_state["current_recipe"]
                 del st.session_state["current_drip_params"]
                 st.rerun()
@@ -416,6 +425,9 @@ with tab4:
             recipe = data_payload.get("recipe") or {}
             
             curr_rating = data_payload.get("rating", 3)
+            curr_acid = data_payload.get("acid_level", "適正")
+            curr_bitter = data_payload.get("bitter_level", "適正")
+            curr_actual_time = data_payload.get("actual_time", "")
             raw_issues = data_payload.get("taste_issues") or data_payload.get("taste_issue") or ["問題なし（バランス良好）"]
             curr_issues = [raw_issues] if isinstance(raw_issues, str) else raw_issues
             raw_goals = data_payload.get("target_goals") or data_payload.get("target_goal") or ["現状維持"]
@@ -424,6 +436,9 @@ with tab4:
             
             safe_issues = [x for x in curr_issues if x in prompts.TASTE_ISSUES_OPTIONS]
             safe_goals = [x for x in curr_goals if x in prompts.TARGET_GOALS_OPTIONS]
+
+            acid_opts = ["弱すぎる", "やや弱め", "適正", "やや強め", "強すぎる"]
+            bitter_opts = ["軽すぎる", "やや軽め", "適正", "やや重め", "重すぎる"]
 
             log_type = data_payload.get("coffee_type", "ホット")
             log_water = data_payload.get("water_per_cup", 300)
@@ -445,8 +460,11 @@ with tab4:
                 f_col1, f_col2 = st.columns(2)
                 with f_col1:
                     new_rating = st.slider("総合満足度", min_value=1, max_value=5, value=curr_rating, key=f"hist_rate_{log_id}")
+                    new_acid = st.select_slider("酸味の印象", options=acid_opts, value=curr_acid if curr_acid in acid_opts else "適正", key=f"hist_acid_{log_id}")
+                    new_bitter = st.select_slider("苦味・ボディの印象", options=bitter_opts, value=curr_bitter if curr_bitter in bitter_opts else "適正", key=f"hist_bitter_{log_id}")
                     new_issues = st.multiselect("味の気になった点", prompts.TASTE_ISSUES_OPTIONS, default=safe_issues, key=f"hist_issue_{log_id}")
                 with f_col2:
+                    new_actual_time = st.text_input("実際の落ちきり完了時間", value=curr_actual_time, key=f"hist_actual_time_{log_id}")
                     new_goals = st.multiselect("次回どうしたいか", prompts.TARGET_GOALS_OPTIONS, default=safe_goals, key=f"hist_goal_{log_id}")
                     new_comment = st.text_input("自由コメント", value=curr_comment, key=f"hist_comment_{log_id}")
                 
@@ -454,6 +472,9 @@ with tab4:
                     try:
                         updated_payload = data_payload
                         updated_payload["rating"] = new_rating
+                        updated_payload["acid_level"] = new_acid
+                        updated_payload["bitter_level"] = new_bitter
+                        updated_payload["actual_time"] = new_actual_time
                         updated_payload["taste_issues"] = new_issues
                         updated_payload["target_goals"] = new_goals
                         updated_payload["comment"] = new_comment
