@@ -14,7 +14,7 @@ def get_session_id():
         return ctx.session_id
     return "default_session"
 
-# 指定要素を画面上部（オフセット考慮）へ滑らかにスクロールさせる関数
+# スクロールヘルパー関数
 def auto_scroll_to(element_id):
     js_code = f"""
     <script>
@@ -28,22 +28,17 @@ def auto_scroll_to(element_id):
     """
     components.html(js_code, height=0)
 
-# 蒸らし時間を純粋な「xx秒」のみに整形するヘルパー関数
+# 蒸らし時間を「xx秒」のみに整形するヘルパー関数
 def format_bloom_time(raw_bloom):
     if not raw_bloom or raw_bloom == '-':
         return "-"
     raw_str = str(raw_bloom).strip()
-    
-    # 0:00 - 0:40 形式から秒数を抽出
     match_range = re.search(r'0:00\s*[-~〜]\s*0:(\d{1,2})', raw_str)
     if match_range:
-        return f"{int(match_range.group(1))}秒"
-        
-    # 40s, 40sec, 40秒 などの数字抽出
+        return f"{int(match_range.group(1))} sec"
     match_sec = re.search(r'(\d+)', raw_str)
     if match_sec:
-        return f"{int(match_sec.group(1))}秒"
-        
+        return f"{int(match_sec.group(1))} sec"
     return raw_str
 
 def render():
@@ -69,27 +64,27 @@ def render():
         confirmed_logs = sorted(confirmed_logs, key=lambda x: str(x.get("created_at", "")), reverse=True)
 
     bean_names = [b.get("name") for b in beans_data if b.get("name")] if beans_data else [
-        "エチオピア イルガチェフェ", "グアテマラ アンティグア", "ブラジル サントス"
+        "Ethiopia Yirgacheffe", "Guatemala Antigua", "Brazil Santos"
     ]
 
     # セッション状態の初期化
     if "wizard_step" not in st.session_state:
         st.session_state["wizard_step"] = 1
     if "sel_type" not in st.session_state:
-        st.session_state["sel_type"] = "ホット"
+        st.session_state["sel_type"] = "HOT"
     if "sel_shop" not in st.session_state:
-        st.session_state["sel_shop"] = "すべて"
+        st.session_state["sel_shop"] = "ALL"
     if "sel_bean" not in st.session_state:
         st.session_state["sel_bean"] = bean_names[0] if bean_names else ""
     if "sel_flavor" not in st.session_state:
-        st.session_state["sel_flavor"] = "バランス重視"
+        st.session_state["sel_flavor"] = "BALANCED"
 
     if "default_cup_count" not in st.session_state:
         st.session_state["default_cup_count"] = 1
     if "water_per_cup" not in st.session_state:
         st.session_state["water_per_cup"] = 300
 
-    # リロード時、ドラフトが存在すれば復元
+    # ドラフト復元
     if "current_recipe" not in st.session_state and my_draft_log:
         draft_data = my_draft_log.get("data") or {}
         if draft_data.get("recipe"):
@@ -99,40 +94,40 @@ def render():
                 "bean_id": my_draft_log.get("bean_id"),
                 "flavor_profile": my_draft_log.get("flavor_profile"),
                 "cup_count": my_draft_log.get("cup_count", 1),
-                "roast_date": my_draft_log.get("roasted_date") or "未指定",
-                "coffee_type": draft_data.get("coffee_type", "ホット"),
+                "roast_date": my_draft_log.get("roasted_date") or "UNSPECIFIED",
+                "coffee_type": draft_data.get("coffee_type", "HOT"),
                 "water_per_cup": draft_data.get("water_per_cup", 300)
             }
             st.session_state["draft_log_id"] = my_draft_log.get("id")
 
-    st.header("1. 条件選択")
+    st.markdown("### 1. PARAMETER SETUP")
 
-    # --- STEP 1: 抽出タイプ ---
+    # --- STEP 1: DRIP TYPE ---
     st.markdown('<div id="step-1" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
-    st.markdown("#### ① 抽出タイプ")
+    st.markdown("#### ① TYPE")
     type_col1, type_col2 = st.columns(2)
     with type_col1:
-        if st.button("🔥 ホット", use_container_width=True, type="primary" if st.session_state["sel_type"] == "ホット" and st.session_state["wizard_step"] > 1 else "secondary"):
-            st.session_state["sel_type"] = "ホット"
+        if st.button("🔥 HOT", use_container_width=True, type="primary" if st.session_state["sel_type"] == "HOT" and st.session_state["wizard_step"] > 1 else "secondary"):
+            st.session_state["sel_type"] = "HOT"
             if st.session_state["wizard_step"] == 1:
                 st.session_state["wizard_step"] = 2
             st.session_state["scroll_target"] = "step-2"
             st.rerun()
     with type_col2:
-        if st.button("🧊 アイス", use_container_width=True, type="primary" if st.session_state["sel_type"] == "アイス" and st.session_state["wizard_step"] > 1 else "secondary"):
-            st.session_state["sel_type"] = "アイス"
+        if st.button("🧊 ICED", use_container_width=True, type="primary" if st.session_state["sel_type"] == "ICED" and st.session_state["wizard_step"] > 1 else "secondary"):
+            st.session_state["sel_type"] = "ICED"
             if st.session_state["wizard_step"] == 1:
                 st.session_state["wizard_step"] = 2
             st.session_state["scroll_target"] = "step-2"
             st.rerun()
 
-    # --- STEP 2: 購入店選択 ---
+    # --- STEP 2: ROASTERY / SHOP ---
     if st.session_state["wizard_step"] >= 2:
         st.markdown("---")
         st.markdown('<div id="step-2" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
-        st.markdown("#### ② 購入店を選択")
+        st.markdown("#### ② ROASTERY / SHOP")
         shops = sorted(list(set([b.get("shop") for b in beans_data if b.get("shop")])))
-        shop_options = ["すべて"] + shops
+        shop_options = ["ALL"] + shops
 
         shop_cols = st.columns(min(len(shop_options), 3))
         for idx, shop_item in enumerate(shop_options):
@@ -147,7 +142,7 @@ def render():
                     st.rerun()
 
     # 豆フィルタリング
-    if st.session_state["sel_shop"] != "すべて":
+    if st.session_state["sel_shop"] != "ALL":
         filtered_beans = [b for b in beans_data if b.get("shop") == st.session_state["sel_shop"]]
     else:
         filtered_beans = beans_data
@@ -156,11 +151,11 @@ def render():
     if not filtered_bean_names:
         filtered_bean_names = bean_names
 
-    # --- STEP 3: 豆選択 ---
+    # --- STEP 3: BEAN SELECTION ---
     if st.session_state["wizard_step"] >= 3:
         st.markdown("---")
         st.markdown('<div id="step-3" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
-        st.markdown("#### ③ 豆を選択")
+        st.markdown("#### ③ BEAN")
         bean_cols = st.columns(1 if len(filtered_bean_names) == 1 else 2)
         for idx, b_name in enumerate(filtered_bean_names):
             col_target = bean_cols[idx % len(bean_cols)]
@@ -173,12 +168,12 @@ def render():
                     st.session_state["scroll_target"] = "step-4"
                     st.rerun()
 
-    # --- STEP 4: 味の方向性 ---
+    # --- STEP 4: FLAVOR PROFILE ---
     if st.session_state["wizard_step"] >= 4:
         st.markdown("---")
         st.markdown('<div id="step-4" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
-        st.markdown("#### ④ 味の方向性")
-        flavors = ["すっきり・フルーティー", "バランス重視", "しっかり・コク旨"]
+        st.markdown("#### ④ FLAVOR TARGET")
+        flavors = ["FRUITY & LIGHT", "BALANCED", "RICH & BOLD"]
         flv_cols = st.columns(3)
         for idx, flv in enumerate(flavors):
             with flv_cols[idx]:
@@ -190,26 +185,26 @@ def render():
                     st.session_state["scroll_target"] = "step-5"
                     st.rerun()
 
-    # --- STEP 5: 細かい設定＆決定 ---
+    # --- STEP 5: FINE TUNING ---
     if st.session_state["wizard_step"] >= 5:
         st.markdown("---")
         st.markdown('<div id="step-5" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
-        st.markdown("#### ⑤ 細かい設定")
-        with st.expander("⚙️ 量・杯数・焙煎日の設定", expanded=True):
+        st.markdown("#### ⑤ QUANTITY & ROAST")
+        with st.expander("⚙️ ADVANCED SETTINGS", expanded=True):
             col_sub1, col_sub2 = st.columns(2)
             with col_sub1:
                 selected_water_per_cup = st.number_input(
-                    "1杯あたりの量 (ml)", min_value=150, max_value=500,
+                    "WATER PER CUP (ml)", min_value=150, max_value=500,
                     value=st.session_state["water_per_cup"], step=10
                 )
                 cup_count = st.slider(
-                    "抽出する杯数", min_value=1, max_value=4,
+                    "CUP COUNT", min_value=1, max_value=4,
                     value=st.session_state["default_cup_count"]
                 )
             with col_sub2:
                 today_date = datetime.date.today()
                 roast_date_input = st.date_input(
-                    "焙煎日（任意）",
+                    "ROAST DATE (OPTIONAL)",
                     value=None,
                     max_value=today_date,
                     key="drip_roast_date"
@@ -218,16 +213,16 @@ def render():
         chosen_bean = next((b for b in beans_data if b.get("name") == st.session_state["sel_bean"]), {"name": st.session_state["sel_bean"]})
         chosen_bean_id = chosen_bean.get("id") if isinstance(chosen_bean, dict) else None
 
-        # 過去フィードバックの取得
-        past_feedback_text = "過去の評価なし"
+        # 過去フィードバック
+        past_feedback_text = "No prior feedback"
         if chosen_bean_id and confirmed_logs:
             past_logs = [l for l in confirmed_logs if l.get("bean_id") == chosen_bean_id]
             if past_logs:
                 latest_log = past_logs[0]
                 log_data = latest_log.get("data") or {}
                 rating = log_data.get("rating")
-                acid = log_data.get("acid_level", "適正")
-                bitter = log_data.get("bitter_level", "適正")
+                acid = log_data.get("acid_level", "OPTIMAL")
+                bitter = log_data.get("bitter_level", "OPTIMAL")
                 act_time = log_data.get("actual_time", "")
                 raw_issues = log_data.get("taste_issues") or log_data.get("taste_issue") or []
                 issues_list = [raw_issues] if isinstance(raw_issues, str) else raw_issues
@@ -235,25 +230,25 @@ def render():
                 goals_list = [raw_goals] if isinstance(raw_goals, str) else raw_goals
                 comment = log_data.get("comment", "")
 
-                feedback_parts = [f"満足度: ★{rating or '未評価'}/5"]
-                if acid != "適正": feedback_parts.append(f"酸味: {acid}")
-                if bitter != "適正": feedback_parts.append(f"苦味・ボディ: {bitter}")
-                if act_time: feedback_parts.append(f"実際の抽出完了時間: {act_time}")
-                if issues_list: feedback_parts.append(f"気になった点: [{ '、'.join(issues_list) }]")
-                if goals_list: feedback_parts.append(f"改善希望: [{ '、'.join(goals_list) }]")
-                if comment: feedback_parts.append(f"コメント: {comment}")
+                feedback_parts = [f"Rating: ★{rating or '-'}/5"]
+                if acid != "適正" and acid != "OPTIMAL": feedback_parts.append(f"Acid: {acid}")
+                if bitter != "適正" and bitter != "OPTIMAL": feedback_parts.append(f"Body: {bitter}")
+                if act_time: feedback_parts.append(f"Time: {act_time}")
+                if issues_list: feedback_parts.append(f"Issues: [{ ', '.join(issues_list) }]")
+                if goals_list: feedback_parts.append(f"Goals: [{ ', '.join(goals_list) }]")
+                if comment: feedback_parts.append(f"Note: {comment}")
 
                 past_feedback_text = " | ".join(feedback_parts)
 
-        if past_feedback_text != "過去の評価なし":
-            st.info(f"💡 **この豆の前回のフィードバック**\n{past_feedback_text}\n（今回のAI提案に自動反映されます）")
+        if past_feedback_text != "No prior feedback":
+            st.info(f"💡 **LAST SESSION MEMORY**\n{past_feedback_text}")
 
         st.markdown("<br>", unsafe_allow_html=True)
         col_btn1, col_btn2 = st.columns([3, 1])
         with col_btn1:
-            if st.button("🚀 最適なレシピを提案してもらう", key="unique_recipe_button", use_container_width=True, type="primary"):
-                with st.spinner("BARIS⚡太郎くんが最適なドリッパーと粉量、レシピを考案しています..."):
-                    roast_date_str = roast_date_input.strftime("%Y-%m-%d") if roast_date_input else "未指定"
+            if st.button("🚀 GENERATE RECIPE", key="unique_recipe_button", use_container_width=True, type="primary"):
+                with st.spinner("COMPUTING OPTIMAL RECIPE..."):
+                    roast_date_str = roast_date_input.strftime("%Y-%m-%d") if roast_date_input else "UNSPECIFIED"
                     active_equipment = [eq for eq in equipment_data if eq.get("is_active", True) is not False]
 
                     prompt = prompts.build_drip_prompt(
@@ -280,7 +275,7 @@ def render():
                             "bean_id": chosen_bean_id,
                             "flavor_profile": st.session_state["sel_flavor"],
                             "cup_count": cup_count,
-                            "roasted_date": roast_date_str if roast_date_str != "未指定" else None,
+                            "roasted_date": roast_date_str if roast_date_str != "UNSPECIFIED" else None,
                             "grind_setting": recipe_data.get('grind_setting', '-'),
                             "data": {
                                 "is_draft": True,
@@ -303,93 +298,92 @@ def render():
                         st.session_state["scroll_target"] = "recipe-view"
                         st.rerun()
                     else:
-                        st.warning("⚠️ 全てのAIモデルサーバーが混雑しています。1分ほど置いてから再度お試しください。")
-                        with st.expander("🔍 エラー詳細"):
+                        st.warning("⚠️ ALL ENGINE SERVERS BUSY. PLEASE RETRY IN A MOMENT.")
+                        with st.expander("🔍 ERROR DETAILS"):
                             st.write(error_msg)
 
         with col_btn2:
-            if st.button("🔄 やり直す", use_container_width=True):
+            if st.button("🔄 RESET", use_container_width=True):
                 st.session_state["wizard_step"] = 1
                 st.session_state["scroll_target"] = "step-1"
                 st.rerun()
 
-    # --- レシピ表示・評価セクション ---
+    # --- RECIPE DISPLAY ---
     if "current_recipe" in st.session_state and st.session_state["current_recipe"]:
         recipe = st.session_state["current_recipe"]
         params = st.session_state["current_drip_params"]
 
         st.divider()
         st.markdown('<div id="recipe-view" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
-        st.success(f"レシピが完成しました！（{params.get('coffee_type', 'ホット')} / {params.get('water_per_cup', 300)}ml×{params.get('cup_count', 1)}杯）")
+        st.success(f"RECIPE READY // [{params.get('coffee_type', 'HOT')}] {params.get('water_per_cup', 300)}ml x {params.get('cup_count', 1)} CUP(S)")
         st.markdown(f"### 📖 {recipe.get('recipe_title', '-')}")
 
         c_p1, c_p2 = st.columns(2)
         with c_p1:
-            st.metric("おすすめ粉量", recipe.get('coffee_amount', '-'))
-            st.metric("お湯の温度", recipe.get('water_temp', '-'))
+            st.metric("COFFEE", recipe.get('coffee_amount', '-'))
+            st.metric("TEMP", recipe.get('water_temp', '-'))
         with c_p2:
-            st.metric("ミル挽き目", recipe.get('grind_setting', '-'))
-            # 蒸らし時間を「xx秒」形式でシンプル表示
+            st.metric("GRIND", recipe.get('grind_setting', '-'))
             formatted_bloom = format_bloom_time(recipe.get('bloom_time'))
-            st.metric("蒸らし時間", formatted_bloom)
+            st.metric("BLOOM", formatted_bloom)
 
         ice_val = recipe.get('ice_amount', 'なし')
         if ice_val and ice_val != 'なし' and ice_val != '-':
-            st.info(f"🧊 **事前投入の氷（サーバー内）**: {ice_val}")
+            st.info(f"🧊 **PRE-ICE (IN SERVER)**: {ice_val}")
 
-        with st.expander("✨ 使用指定器具の詳細を見る", expanded=False):
-            st.write(f"- **ドリッパー**: {recipe.get('dripper', '-')}")
-            st.write(f"- **フィルター**: {recipe.get('filter', '-')}")
-            st.write(f"- **ミル・グラインダー**: {recipe.get('grinder', '-')}")
+        with st.expander("✨ GEAR SPECIFICATIONS", expanded=False):
+            st.write(f"- **DRIPPER**: {recipe.get('dripper', '-')}")
+            st.write(f"- **FILTER**: {recipe.get('filter', '-')}")
+            st.write(f"- **GRINDER**: {recipe.get('grinder', '-')}")
 
-        st.markdown("### 📊 抽出ステップ手順")
+        st.markdown("### 📊 STEP-BY-STEP SEQUENCE")
         steps = recipe.get('recipe_steps', [])
         if steps and isinstance(steps, list):
             for s in steps:
                 if isinstance(s, dict):
                     st.markdown(
                         f"""
-                        <div style="background-color: #1e222a; padding: 12px 16px; border-radius: 8px; border-left: 5px solid #ff4b4b; margin-bottom: 12px;">
-                            <div style="font-size: 1.1em; font-weight: bold; color: #ffffff; display: flex; justify-content: space-between;">
+                        <div style="background-color: #0A0A0A; padding: 12px 16px; border: 1px solid #FFFFFF; border-left: 4px solid #FF9900; margin-bottom: 12px;">
+                            <div style="font-family: 'Silkscreen', monospace; font-size: 1.0em; font-weight: bold; color: #FFFFFF; display: flex; justify-content: space-between;">
                                 <span>STEP {s.get('step_number', '-')}: {s.get('purpose', '-')}</span>
-                                <span style="color: #ffbd45;">⏱️ {s.get('time', '-')}</span>
+                                <span style="color: #FF9900;">⏱️ {s.get('time', '-')}</span>
                             </div>
-                            <div style="margin-top: 8px; font-size: 0.95em; color: #d0d4dc;">
-                                💧 <b>注ぎ量:</b> {s.get('pour_amount', '-')} ｜ 🏁 <b>累計:</b> <span style="font-weight: bold; color: #40c4ff;">{s.get('total_amount', '-')}</span>
+                            <div style="margin-top: 8px; font-size: 0.9em; color: #CCCCCC;">
+                                💧 <b>POUR:</b> {s.get('pour_amount', '-')} ｜ 🏁 <b>TOTAL:</b> <span style="font-weight: bold; color: #FFFFFF;">{s.get('total_amount', '-')}</span>
                             </div>
-                            <div style="margin-top: 6px; font-size: 0.9em; color: #a0a8b6;">
-                                🌀 <b>注ぎ方:</b> {s.get('pouring_method', '-')}（{s.get('flow_rate', '-')}）
+                            <div style="margin-top: 6px; font-size: 0.85em; color: #888888;">
+                                🌀 <b>METHOD:</b> {s.get('pouring_method', '-')}（{s.get('flow_rate', '-')}）
                             </div>
                         </div>
                         """,
                         unsafe_allow_html=True
                     )
 
-        st.info(f"💡 **ワンポイント解説**: {recipe.get('notes', '-')}")
+        st.info(f"💡 **BREW NOTES**: {recipe.get('notes', '-')}")
 
-        with st.expander("🔍 生成された生のデータ（JSON）を確認"):
+        with st.expander("🔍 RAW JSON DATA"):
             st.json(recipe)
 
         st.divider()
-        st.subheader("📝 今回の抽出評価・フィードバック")
+        st.subheader("📝 SESSION EVALUATION")
         f_col1, f_col2 = st.columns(2)
         with f_col1:
-            drip_rating = st.slider("総合満足度", min_value=1, max_value=5, value=3, key="drip_input_rating")
-            acid_level = st.select_slider("酸味の印象", options=["弱すぎる", "やや弱め", "適正", "やや強め", "強すぎる"], value="適正", key="drip_input_acid")
-            bitter_level = st.select_slider("苦味・ボディの印象", options=["軽すぎる", "やや軽め", "適正", "やや重め", "重すぎる"], value="適正", key="drip_input_bitter")
-            drip_issues = st.multiselect("味の気になった点（複数選択可）", prompts.TASTE_ISSUES_OPTIONS, default=["問題なし（バランス良好）"], key="drip_input_issues")
+            drip_rating = st.slider("RATING (1-5)", min_value=1, max_value=5, value=3, key="drip_input_rating")
+            acid_level = st.select_slider("ACIDITY", options=["TOO WEAK", "WEAK", "OPTIMAL", "STRONG", "TOO STRONG"], value="OPTIMAL", key="drip_input_acid")
+            bitter_level = st.select_slider("BODY / BITTERNESS", options=["TOO LIGHT", "LIGHT", "OPTIMAL", "HEAVY", "TOO HEAVY"], value="OPTIMAL", key="drip_input_bitter")
+            drip_issues = st.multiselect("TASTE ISSUES", prompts.TASTE_ISSUES_OPTIONS, default=["問題なし（バランス良好）"], key="drip_input_issues")
         with f_col2:
-            actual_time = st.text_input("実際の落ちきり完了時間（任意）", placeholder="例: 2:45", key="drip_input_actual_time")
-            drip_goals = st.multiselect("次回どうしたいか（複数選択可）", prompts.TARGET_GOALS_OPTIONS, default=["現状維持"], key="drip_input_goals")
-            drip_comment = st.text_input("自由コメント（任意）", placeholder="例: 後半の落ちが遅く渋みが少し出た", key="drip_input_comment")
+            actual_time = st.text_input("TOTAL TIME (e.g. 2:45)", placeholder="e.g. 2:45", key="drip_input_actual_time")
+            drip_goals = st.multiselect("NEXT GOALS", prompts.TARGET_GOALS_OPTIONS, default=["現状維持"], key="drip_input_goals")
+            drip_comment = st.text_input("NOTES / COMMENT", placeholder="e.g. Slight astringency in finish", key="drip_input_comment")
 
-        if st.button("💾 この評価で確定・保存する", key="btn_save_recipe_with_eval", use_container_width=True, type="primary"):
+        if st.button("💾 SAVE EVALUATION", key="btn_save_recipe_with_eval", use_container_width=True, type="primary"):
             try:
                 final_payload = {
                     "bean_id": params.get("bean_id"),
                     "flavor_profile": params.get("flavor_profile"),
                     "cup_count": params.get("cup_count"),
-                    "roasted_date": params.get("roast_date") if params.get("roast_date") != "未指定" else None,
+                    "roasted_date": params.get("roast_date") if params.get("roast_date") != "UNSPECIFIED" else None,
                     "grind_setting": recipe.get('grind_setting', '-'),
                     "data": {
                         "is_draft": False,
@@ -408,7 +402,7 @@ def render():
                 else:
                     db.insert_drip_log(final_payload)
 
-                st.success("レシピ評価を確定保存しました！")
+                st.success("SESSION LOG SAVED SUCCESSFULLY!")
                 del st.session_state["current_recipe"]
                 del st.session_state["current_drip_params"]
                 if "draft_log_id" in st.session_state:
@@ -417,9 +411,9 @@ def render():
                 st.session_state["scroll_target"] = "step-1"
                 st.rerun()
             except Exception as e:
-                st.error(f"保存エラー: {e}")
+                st.error(f"SAVE ERROR: {e}")
 
-    # 描画末尾でスクロール対象があれば実行
+    # スクロール対象の実行
     if "scroll_target" in st.session_state and st.session_state["scroll_target"]:
         auto_scroll_to(st.session_state["scroll_target"])
         st.session_state["scroll_target"] = None
