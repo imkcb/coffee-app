@@ -13,7 +13,7 @@ def get_session_id():
         return ctx.session_id
     return "default_session"
 
-# 指定要素を画面の一番上（block: 'start'）へ滑らかに自動スクロールさせる関数
+# 指定要素を画面上部（オフセット考慮）へ滑らかにスクロールさせる関数
 def auto_scroll_to(element_id):
     js_code = f"""
     <script>
@@ -22,7 +22,7 @@ def auto_scroll_to(element_id):
             if (element) {{
                 element.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
             }}
-        }}, 150);
+        }}, 200);
     </script>
     """
     components.html(js_code, height=0)
@@ -89,7 +89,7 @@ def render():
     st.header("1. 条件選択")
 
     # --- STEP 1: 抽出タイプ ---
-    st.markdown('<div id="step-1" style="scroll-margin-top: 20px;"></div>', unsafe_allow_html=True)
+    st.markdown('<div id="step-1" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
     st.markdown("#### ① 抽出タイプ")
     type_col1, type_col2 = st.columns(2)
     with type_col1:
@@ -110,7 +110,7 @@ def render():
     # --- STEP 2: 購入店選択 ---
     if st.session_state["wizard_step"] >= 2:
         st.markdown("---")
-        st.markdown('<div id="step-2" style="scroll-margin-top: 20px;"></div>', unsafe_allow_html=True)
+        st.markdown('<div id="step-2" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
         st.markdown("#### ② 購入店を選択")
         shops = sorted(list(set([b.get("shop") for b in beans_data if b.get("shop")])))
         shop_options = ["すべて"] + shops
@@ -140,7 +140,7 @@ def render():
     # --- STEP 3: 豆選択 ---
     if st.session_state["wizard_step"] >= 3:
         st.markdown("---")
-        st.markdown('<div id="step-3" style="scroll-margin-top: 20px;"></div>', unsafe_allow_html=True)
+        st.markdown('<div id="step-3" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
         st.markdown("#### ③ 豆を選択")
         bean_cols = st.columns(1 if len(filtered_bean_names) == 1 else 2)
         for idx, b_name in enumerate(filtered_bean_names):
@@ -157,7 +157,7 @@ def render():
     # --- STEP 4: 味の方向性 ---
     if st.session_state["wizard_step"] >= 4:
         st.markdown("---")
-        st.markdown('<div id="step-4" style="scroll-margin-top: 20px;"></div>', unsafe_allow_html=True)
+        st.markdown('<div id="step-4" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
         st.markdown("#### ④ 味の方向性")
         flavors = ["すっきり・フルーティー", "バランス重視", "しっかり・コク旨"]
         flv_cols = st.columns(3)
@@ -174,7 +174,7 @@ def render():
     # --- STEP 5: 細かい設定＆決定 ---
     if st.session_state["wizard_step"] >= 5:
         st.markdown("---")
-        st.markdown('<div id="step-5" style="scroll-margin-top: 20px;"></div>', unsafe_allow_html=True)
+        st.markdown('<div id="step-5" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
         st.markdown("#### ⑤ 細かい設定")
         with st.expander("⚙️ 量・杯数・焙煎日の設定", expanded=True):
             col_sub1, col_sub2 = st.columns(2)
@@ -300,7 +300,7 @@ def render():
         params = st.session_state["current_drip_params"]
 
         st.divider()
-        st.markdown('<div id="recipe-view" style="scroll-margin-top: 20px;"></div>', unsafe_allow_html=True)
+        st.markdown('<div id="recipe-view" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
         st.success(f"レシピが完成しました！（{params.get('coffee_type', 'ホット')} / {params.get('water_per_cup', 300)}ml×{params.get('cup_count', 1)}杯）")
         st.markdown(f"### 📖 {recipe.get('recipe_title', '-')}")
 
