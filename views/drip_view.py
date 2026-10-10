@@ -99,11 +99,8 @@ def render():
         st.session_state["sel_roast_level"] = "MEDIUM"
     if "sel_flavor" not in st.session_state:
         st.session_state["sel_flavor"] = "BALANCED"
-
-    if "default_cup_count" not in st.session_state:
-        st.session_state["default_cup_count"] = 1
-    if "water_per_cup" not in st.session_state:
-        st.session_state["water_per_cup"] = 300
+    if "water_amount" not in st.session_state:
+        st.session_state["water_amount"] = 300
 
     # ドラフト復元
     if "current_recipe" not in st.session_state and my_draft_log:
@@ -114,7 +111,7 @@ def render():
                 "bean_name": draft_data.get("bean_name"),
                 "bean_id": my_draft_log.get("bean_id"),
                 "flavor_profile": my_draft_log.get("flavor_profile"),
-                "cup_count": my_draft_log.get("cup_count", 1),
+                "cup_count": 1,
                 "roast_date": my_draft_log.get("roasted_date") or "UNSPECIFIED",
                 "coffee_type": draft_data.get("coffee_type", "HOT"),
                 "water_per_cup": draft_data.get("water_per_cup", 300)
@@ -123,7 +120,7 @@ def render():
 
     st.markdown("### SETUP")
 
-    # --- STEP 1: DRIP TYPE ---
+    # --- 1. TYPE ---
     st.markdown('<div id="step-1" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
     st.markdown("#### 1. TYPE")
     type_col1, type_col2 = st.columns(2)
@@ -142,7 +139,7 @@ def render():
             st.session_state["scroll_target"] = "step-2"
             st.rerun()
 
-    # --- STEP 2: ROASTERY / SHOP ---
+    # --- 2. ROASTERY ---
     if st.session_state["wizard_step"] >= 2:
         st.markdown("---")
         st.markdown('<div id="step-2" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
@@ -162,7 +159,7 @@ def render():
                     st.session_state["scroll_target"] = "step-3"
                     st.rerun()
 
-    # --- STEP 3: BEAN or ROAST LEVEL ---
+    # --- 3. BEAN / ROAST LEVEL ---
     if st.session_state["wizard_step"] >= 3:
         st.markdown("---")
         st.markdown('<div id="step-3" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
@@ -192,7 +189,6 @@ def render():
             if not filtered_bean_names:
                 filtered_bean_names = bean_names
 
-            # アルファベット順にソート
             filtered_bean_names = sorted(filtered_bean_names, key=lambda x: str(x).lower())
 
             bean_cols = st.columns(1 if len(filtered_bean_names) == 1 else 2)
@@ -207,7 +203,7 @@ def render():
                         st.session_state["scroll_target"] = "step-4"
                         st.rerun()
 
-    # --- STEP 4: FLAVOR PROFILE ---
+    # --- 4. FLAVOR ---
     if st.session_state["wizard_step"] >= 4:
         st.markdown("---")
         st.markdown('<div id="step-4" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
@@ -224,30 +220,27 @@ def render():
                     st.session_state["scroll_target"] = "step-5"
                     st.rerun()
 
-    # --- STEP 5: FINE TUNING ---
+    # --- 5. QUANTITY ---
     if st.session_state["wizard_step"] >= 5:
         st.markdown("---")
         st.markdown('<div id="step-5" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
         st.markdown("#### 5. QUANTITY")
-        with st.expander("SETTINGS", expanded=True):
-            col_sub1, col_sub2 = st.columns(2)
-            with col_sub1:
-                selected_water_per_cup = st.number_input(
-                    "WATER / CUP (ml)", min_value=150, max_value=500,
-                    value=st.session_state["water_per_cup"], step=10
-                )
-                cup_count = st.slider(
-                    "CUPS", min_value=1, max_value=4,
-                    value=st.session_state["default_cup_count"]
-                )
-            with col_sub2:
-                today_date = datetime.date.today()
-                roast_date_input = st.date_input(
-                    "ROAST DATE",
-                    value=None,
-                    max_value=today_date,
-                    key="drip_roast_date"
-                )
+        
+        col_sub1, col_sub2 = st.columns(2)
+        with col_sub1:
+            selected_water = st.number_input(
+                "WATER (ml)", min_value=150, max_value=800,
+                value=st.session_state["water_amount"], step=10
+            )
+            st.session_state["water_amount"] = selected_water
+        with col_sub2:
+            today_date = datetime.date.today()
+            roast_date_input = st.date_input(
+                "ROAST DATE",
+                value=None,
+                max_value=today_date,
+                key="drip_roast_date"
+            )
 
         if st.session_state["sel_shop"] == "NONE":
             chosen_bean = {
@@ -302,11 +295,11 @@ def render():
                         chosen_bean=chosen_bean,
                         roast_date_str=roast_date_str,
                         flavor_profile=st.session_state["sel_flavor"],
-                        cup_count=cup_count,
+                        cup_count=1,
                         equipment_data=active_equipment,
                         past_feedback_text=past_feedback_text,
                         coffee_type=st.session_state["sel_type"],
-                        water_per_cup=selected_water_per_cup
+                        water_per_cup=selected_water
                     )
 
                     recipe_data, error_msg = ai.generate_recipe(prompt)
@@ -314,21 +307,21 @@ def render():
                         st.session_state["current_recipe"] = recipe_data
                         st.session_state["current_drip_params"] = {
                             "bean_name": chosen_bean.get("name"), "bean_id": chosen_bean_id,
-                            "flavor_profile": st.session_state["sel_flavor"], "cup_count": cup_count, "roast_date": roast_date_str,
-                            "coffee_type": st.session_state["sel_type"], "water_per_cup": selected_water_per_cup
+                            "flavor_profile": st.session_state["sel_flavor"], "cup_count": 1, "roast_date": roast_date_str,
+                            "coffee_type": st.session_state["sel_type"], "water_per_cup": selected_water
                         }
 
                         draft_payload = {
                             "bean_id": chosen_bean_id,
                             "flavor_profile": st.session_state["sel_flavor"],
-                            "cup_count": cup_count,
+                            "cup_count": 1,
                             "roasted_date": roast_date_str if roast_date_str != "UNSPECIFIED" else None,
                             "grind_setting": recipe_data.get('grind_setting', '-'),
                             "data": {
                                 "is_draft": True,
                                 "session_id": user_session_id,
                                 "bean_name": chosen_bean.get("name"), "recipe": recipe_data,
-                                "coffee_type": st.session_state["sel_type"], "water_per_cup": selected_water_per_cup
+                                "coffee_type": st.session_state["sel_type"], "water_per_cup": selected_water
                             }
                         }
 
@@ -362,8 +355,9 @@ def render():
 
         st.divider()
         st.markdown('<div id="recipe-view" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
-        st.success(f"READY // [{params.get('coffee_type', 'HOT')}] {params.get('water_per_cup', 300)}ml x {params.get('cup_count', 1)}")
-        st.markdown(f"### {recipe.get('recipe_title', '-')}")
+        st.success(f"READY // [{params.get('coffee_type', 'HOT')}] {params.get('water_per_cup', 300)}ml")
+        
+        st.markdown(f"### {recipe.get('recipe_title', '最適抽出レシピ')}")
 
         formatted_bloom = format_bloom_time(recipe.get('bloom_time'))
 
@@ -371,12 +365,22 @@ def render():
         with c_p1:
             st.metric("COFFEE", recipe.get('coffee_amount', '-'))
             st.metric("TEMP", recipe.get('water_temp', '-'))
-            st.metric("DRIPPER", recipe.get('dripper', '-'))
-            st.metric("GRINDER", recipe.get('grinder', '-'))
         with c_p2:
             st.metric("GRIND", recipe.get('grind_setting', '-'))
             st.metric("BLOOM", formatted_bloom)
-            st.metric("FILTER", recipe.get('filter', '-'))
+
+        # GEAR 表示
+        st.markdown("#### GEAR")
+        st.markdown(
+            f"""
+            <div style="background-color: #0D0D0D; padding: 12px 16px; border: 1px solid #262626; border-radius: 4px; margin-bottom: 16px;">
+                <div style="color: #A3A3A3; font-size: 0.85rem; margin-bottom: 4px;">DRIPPER: <span style="color: #FFFFFF; font-weight: bold;">{recipe.get('dripper', '-')}</span></div>
+                <div style="color: #A3A3A3; font-size: 0.85rem; margin-bottom: 4px;">FILTER: <span style="color: #FFFFFF; font-weight: bold;">{recipe.get('filter', '-')}</span></div>
+                <div style="color: #A3A3A3; font-size: 0.85rem;">GRINDER: <span style="color: #FFFFFF; font-weight: bold;">{recipe.get('grinder', '-')}</span></div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
         ice_val = recipe.get('ice_amount', 'なし')
         if ice_val and ice_val != 'なし' and ice_val != '-':
@@ -414,24 +418,24 @@ def render():
             st.json(recipe)
 
         st.divider()
-        st.subheader("EVALUATION")
+        st.subheader("FEEDBACK")
         f_col1, f_col2 = st.columns(2)
         with f_col1:
-            drip_rating = st.slider("RATING (1-5)", min_value=1, max_value=5, value=3, key="drip_input_rating")
-            acid_level = st.select_slider("ACIDITY", options=["TOO WEAK", "WEAK", "OPTIMAL", "STRONG", "TOO STRONG"], value="OPTIMAL", key="drip_input_acid")
-            bitter_level = st.select_slider("BODY / BITTERNESS", options=["TOO LIGHT", "LIGHT", "OPTIMAL", "HEAVY", "TOO HEAVY"], value="OPTIMAL", key="drip_input_bitter")
-            drip_issues = st.multiselect("TASTE ISSUES", prompts.TASTE_ISSUES_OPTIONS, default=["問題なし（バランス良好）"], key="drip_input_issues")
+            drip_rating = st.slider("満足度 (1-5)", min_value=1, max_value=5, value=3, key="drip_input_rating")
+            acid_level = st.select_slider("酸味の強さ", options=["弱すぎる", "やや弱め", "適正", "やや強め", "強すぎる"], value="適正", key="drip_input_acid")
+            bitter_level = st.select_slider("苦味・ボディ", options=["軽すぎる", "やや軽め", "適正", "やや重め", "重すぎる"], value="適正", key="drip_input_bitter")
+            drip_issues = st.multiselect("気になった点", prompts.TASTE_ISSUES_OPTIONS, default=["問題なし（バランス良好）"], key="drip_input_issues")
         with f_col2:
-            actual_time = st.text_input("TOTAL TIME (e.g. 2:45)", placeholder="e.g. 2:45", key="drip_input_actual_time")
-            drip_goals = st.multiselect("NEXT GOALS", prompts.TARGET_GOALS_OPTIONS, default=["現状維持"], key="drip_input_goals")
-            drip_comment = st.text_input("NOTES / COMMENT", placeholder="e.g. Slight astringency in finish", key="drip_input_comment")
+            actual_time = st.text_input("落ちきり時間", placeholder="例: 2:45（任意）", key="drip_input_actual_time")
+            drip_goals = st.multiselect("次回の改善希望", prompts.TARGET_GOALS_OPTIONS, default=["現状維持"], key="drip_input_goals")
+            drip_comment = st.text_input("メモ・コメント", placeholder="例: 後半の落ちが遅く少し渋みが出た（任意）", key="drip_input_comment")
 
-        if st.button("SAVE EVALUATION", key="btn_save_recipe_with_eval", use_container_width=True, type="primary"):
+        if st.button("SAVE FEEDBACK", key="btn_save_recipe_with_eval", use_container_width=True, type="primary"):
             try:
                 final_payload = {
                     "bean_id": params.get("bean_id"),
                     "flavor_profile": params.get("flavor_profile"),
-                    "cup_count": params.get("cup_count"),
+                    "cup_count": 1,
                     "roasted_date": params.get("roast_date") if params.get("roast_date") != "UNSPECIFIED" else None,
                     "grind_setting": recipe.get('grind_setting', '-'),
                     "data": {
@@ -451,7 +455,7 @@ def render():
                 else:
                     db.insert_drip_log(final_payload)
 
-                st.success("LOG SAVED!")
+                st.success("FEEDBACK SAVED!")
                 del st.session_state["current_recipe"]
                 del st.session_state["current_drip_params"]
                 if "draft_log_id" in st.session_state:
@@ -462,7 +466,6 @@ def render():
             except Exception as e:
                 st.error(f"SAVE ERROR: {e}")
 
-    # スクロール対象の実行
     if "scroll_target" in st.session_state and st.session_state["scroll_target"]:
         auto_scroll_to(st.session_state["scroll_target"])
         st.session_state["scroll_target"] = None
