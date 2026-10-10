@@ -14,130 +14,182 @@ import prompts
 # 1. ページ基本設定
 st.set_page_config(
     page_title="Potlog",
-    page_icon="🫖",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# 2. ELEKTRON 8-BIT MONOCHROME CSS
+# 2. ELEKTRON-INSPIRED MONOCHROME CSS (視認性最優先・過剰な枠線とドットフォントの適用範囲制限)
 elektron_css = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Silkscreen:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
 
-/* 全体背景 & フォント */
+/* 全体背景 & ベースフォント */
 html, body, .stApp, [data-testid="stAppViewContainer"] {
     background-color: #000000 !important;
-    color: #FFFFFF !important;
-    font-family: 'DotGothic16', monospace, sans-serif !important;
+    color: #E0E0E0 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
 }
 
-/* ヘッダー非表示・背景固定 */
+/* ヘッダー背景 */
 [data-testid="stHeader"] {
     background-color: #000000 !important;
 }
 
-/* 見出し (Silkscreen / DotGothic16 8bit) */
-h1, h2, h3, h4, h5, h6, span, label, p {
-    font-family: 'DotGothic16', monospace !important;
-}
-
-h1, h2, h3, h4 {
-    font-family: 'Silkscreen', 'DotGothic16', monospace !important;
+/* 8bitフォントはアプリタイトルと大・中見出し（H1~H3）のみに限定 */
+h1, h2, h3, .potlog-title-text {
+    font-family: 'Silkscreen', monospace !important;
     color: #FFFFFF !important;
     text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-/* Potlog 8bitヘッダー */
+h4, h5, h6 {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    font-weight: 600 !important;
+    color: #FFFFFF !important;
+    letter-spacing: 0.5px;
+}
+
+/* Potlog ヘッダー（シンプルで洗練された黒白カード） */
 .potlog-container {
-    border: 2px solid #FFFFFF;
-    background-color: #0A0A0A;
-    padding: 18px;
-    margin-bottom: 20px;
-    box-shadow: 4px 4px 0px #333333;
+    border: 1px solid #333333;
+    background-color: #0D0D0D;
+    padding: 16px 20px;
+    margin-bottom: 24px;
 }
 
 .potlog-title-text {
-    font-family: 'Silkscreen', monospace !important;
-    font-size: 2.2rem;
+    font-size: 1.8rem;
     font-weight: 700;
     color: #FFFFFF;
     margin: 0;
-    letter-spacing: 2px;
 }
 
 .potlog-sub-text {
-    font-family: 'DotGothic16', monospace !important;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: #888888;
-    margin-top: 6px;
+    margin-top: 4px;
+    font-family: monospace;
 }
 
-/* タブデザイン (Elektron OLEDスタイル) */
+/* タブデザイン（シンプル＆クリーン） */
 [data-testid="stTabs"] [data-baseweb="tab-list"] {
-    gap: 4px;
+    gap: 8px;
     background-color: #000000;
-    border-bottom: 2px solid #333333;
+    border-bottom: 1px solid #262626;
 }
 
 [data-testid="stTabs"] [data-baseweb="tab"] {
-    font-family: 'Silkscreen', 'DotGothic16', monospace !important;
-    border: 1px solid #444444 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    border: none !important;
     border-radius: 0px !important;
-    background-color: #111111 !important;
-    color: #888888 !important;
-    padding: 8px 12px !important;
+    background-color: transparent !important;
+    color: #737373 !important;
+    padding: 8px 16px !important;
 }
 
 [data-testid="stTabs"] [aria-selected="true"] {
-    border: 1px solid #FFFFFF !important;
-    background-color: #FFFFFF !important;
-    color: #000000 !important;
-    box-shadow: 2px 2px 0px #FF9900 !important;
+    color: #FFFFFF !important;
+    border-bottom: 2px solid #FF9900 !important;
+    background-color: transparent !important;
 }
 
-/* ボタン (8bit 押し込み風) */
+/* ボタン（視認性の高いフラット・モダンボタン） */
 div.stButton > button {
-    font-family: 'Silkscreen', 'DotGothic16', monospace !important;
-    border: 2px solid #FFFFFF !important;
-    border-radius: 0px !important;
-    background-color: #0A0A0A !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    border: 1px solid #404040 !important;
+    border-radius: 4px !important;
+    background-color: #171717 !important;
     color: #FFFFFF !important;
-    box-shadow: 3px 3px 0px #444444 !important;
+    padding: 8px 16px !important;
+    transition: all 0.15s ease;
 }
 
 div.stButton > button:hover {
-    background-color: #FFFFFF !important;
-    color: #000000 !important;
-    box-shadow: 3px 3px 0px #FF9900 !important;
+    background-color: #262626 !important;
+    border-color: #A3A3A3 !important;
+    color: #FFFFFF !important;
 }
 
-/* メトリック・カード */
-div[data-testid="stMetric"], [data-testid="stExpander"] {
-    border: 1px solid #444444 !important;
-    border-radius: 0px !important;
-    background-color: #0A0A0A !important;
+/* プライマリボタン（アクセント） */
+div.stButton > button[kind="primary"] {
+    background-color: #FF9900 !important;
+    border-color: #FF9900 !important;
+    color: #000000 !important;
+}
+
+div.stButton > button[kind="primary"]:hover {
+    background-color: #FFAD33 !important;
+    border-color: #FFAD33 !important;
+    color: #000000 !important;
+}
+
+/* メトリック表示（枠線をなくし背景色のみで整理） */
+div[data-testid="stMetric"] {
+    border: 1px solid #262626 !important;
+    background-color: #0D0D0D !important;
+    padding: 12px !important;
+    border-radius: 4px !important;
+}
+
+div[data-testid="stMetricLabel"] {
+    color: #A3A3A3 !important;
+    font-size: 0.75rem !important;
 }
 
 div[data-testid="stMetricValue"] {
     color: #FF9900 !important;
+    font-weight: 700 !important;
+}
+
+/* Expander（折りたたみ）の文字崩れ防止とクリーン化 */
+[data-testid="stExpander"] {
+    border: 1px solid #262626 !important;
+    border-radius: 4px !important;
+    background-color: #0D0D0D !important;
+    overflow: hidden;
+}
+
+[data-testid="stExpander"] details summary span {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    color: #E0E0E0 !important;
+    font-weight: 500 !important;
+}
+
+/* 入力フォーム類 */
+input, select, textarea, div[data-baseweb="select"] {
+    background-color: #171717 !important;
+    color: #FFFFFF !important;
+    border: 1px solid #333333 !important;
+    border-radius: 4px !important;
+}
+
+/* 区切り線 */
+hr {
+    border-color: #262626 !important;
+    margin: 24px 0 !important;
 }
 </style>
 """
 
 st.markdown(elektron_css, unsafe_allow_html=True)
 
-# 8bit ヘッダー描画
+# ヘッダー描画
 st.markdown(
     """
     <div class="potlog-container">
-        <div class="potlog-title-text">🫖 POTLOG</div>
+        <div class="potlog-title-text">POTLOG</div>
         <div class="potlog-sub-text">// ELEKTRONIC DRIP ENGINE v2.0</div>
     </div>
     """,
     unsafe_allow_html=True
 )
 
-tab1, tab2, tab3, tab4 = st.tabs(["☕ DRIP", "🫘 BEANS", "🛠️ GEAR", "📈 LOGS"])
+tab1, tab2, tab3, tab4 = st.tabs(["DRIP", "BEANS", "GEAR", "LOGS"])
 
 from views import drip_view, beans_view, equip_view, history_view
 

@@ -28,7 +28,7 @@ def auto_scroll_to(element_id):
     """
     components.html(js_code, height=0)
 
-# 蒸らし時間を「xx秒」のみに整形するヘルパー関数
+# 蒸らし時間を「xx sec」のみに整形するヘルパー関数
 def format_bloom_time(raw_bloom):
     if not raw_bloom or raw_bloom == '-':
         return "-"
@@ -107,14 +107,14 @@ def render():
     st.markdown("#### ① TYPE")
     type_col1, type_col2 = st.columns(2)
     with type_col1:
-        if st.button("🔥 HOT", use_container_width=True, type="primary" if st.session_state["sel_type"] == "HOT" and st.session_state["wizard_step"] > 1 else "secondary"):
+        if st.button("HOT", use_container_width=True, type="primary" if st.session_state["sel_type"] == "HOT" and st.session_state["wizard_step"] > 1 else "secondary"):
             st.session_state["sel_type"] = "HOT"
             if st.session_state["wizard_step"] == 1:
                 st.session_state["wizard_step"] = 2
             st.session_state["scroll_target"] = "step-2"
             st.rerun()
     with type_col2:
-        if st.button("🧊 ICED", use_container_width=True, type="primary" if st.session_state["sel_type"] == "ICED" and st.session_state["wizard_step"] > 1 else "secondary"):
+        if st.button("ICED", use_container_width=True, type="primary" if st.session_state["sel_type"] == "ICED" and st.session_state["wizard_step"] > 1 else "secondary"):
             st.session_state["sel_type"] = "ICED"
             if st.session_state["wizard_step"] == 1:
                 st.session_state["wizard_step"] = 2
@@ -161,7 +161,7 @@ def render():
             col_target = bean_cols[idx % len(bean_cols)]
             with col_target:
                 is_selected = (st.session_state["sel_bean"] == b_name) and (st.session_state["wizard_step"] > 3)
-                if st.button(f"🫘 {b_name}", key=f"btn_bean_{b_name}", use_container_width=True, type="primary" if is_selected else "secondary"):
+                if st.button(b_name, key=f"btn_bean_{b_name}", use_container_width=True, type="primary" if is_selected else "secondary"):
                     st.session_state["sel_bean"] = b_name
                     if st.session_state["wizard_step"] == 3:
                         st.session_state["wizard_step"] = 4
@@ -190,7 +190,7 @@ def render():
         st.markdown("---")
         st.markdown('<div id="step-5" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
         st.markdown("#### ⑤ QUANTITY & ROAST")
-        with st.expander("⚙️ ADVANCED SETTINGS", expanded=True):
+        with st.expander("ADVANCED SETTINGS", expanded=True):
             col_sub1, col_sub2 = st.columns(2)
             with col_sub1:
                 selected_water_per_cup = st.number_input(
@@ -230,7 +230,7 @@ def render():
                 goals_list = [raw_goals] if isinstance(raw_goals, str) else raw_goals
                 comment = log_data.get("comment", "")
 
-                feedback_parts = [f"Rating: ★{rating or '-'}/5"]
+                feedback_parts = [f"Rating: {rating or '-'}/5"]
                 if acid != "適正" and acid != "OPTIMAL": feedback_parts.append(f"Acid: {acid}")
                 if bitter != "適正" and bitter != "OPTIMAL": feedback_parts.append(f"Body: {bitter}")
                 if act_time: feedback_parts.append(f"Time: {act_time}")
@@ -241,12 +241,12 @@ def render():
                 past_feedback_text = " | ".join(feedback_parts)
 
         if past_feedback_text != "No prior feedback":
-            st.info(f"💡 **LAST SESSION MEMORY**\n{past_feedback_text}")
+            st.info(f"LAST SESSION MEMORY\n{past_feedback_text}")
 
         st.markdown("<br>", unsafe_allow_html=True)
         col_btn1, col_btn2 = st.columns([3, 1])
         with col_btn1:
-            if st.button("🚀 GENERATE RECIPE", key="unique_recipe_button", use_container_width=True, type="primary"):
+            if st.button("GENERATE RECIPE", key="unique_recipe_button", use_container_width=True, type="primary"):
                 with st.spinner("COMPUTING OPTIMAL RECIPE..."):
                     roast_date_str = roast_date_input.strftime("%Y-%m-%d") if roast_date_input else "UNSPECIFIED"
                     active_equipment = [eq for eq in equipment_data if eq.get("is_active", True) is not False]
@@ -290,7 +290,7 @@ def render():
                             if existing_draft_id:
                                 db.update_drip_log(existing_draft_id, draft_payload)
                             else:
-                                new_res = db.insert_drip_log(draft_payload)
+                                new_res = db.insert_drip_log(final_payload)
                                 if new_res and isinstance(new_res, list) and len(new_res) > 0:
                                     st.session_state["draft_log_id"] = new_res[0].get("id")
                         except Exception as e:
@@ -298,12 +298,12 @@ def render():
                         st.session_state["scroll_target"] = "recipe-view"
                         st.rerun()
                     else:
-                        st.warning("⚠️ ALL ENGINE SERVERS BUSY. PLEASE RETRY IN A MOMENT.")
-                        with st.expander("🔍 ERROR DETAILS"):
+                        st.warning("ALL ENGINE SERVERS BUSY. PLEASE RETRY IN A MOMENT.")
+                        with st.expander("ERROR DETAILS"):
                             st.write(error_msg)
 
         with col_btn2:
-            if st.button("🔄 RESET", use_container_width=True):
+            if st.button("RESET", use_container_width=True):
                 st.session_state["wizard_step"] = 1
                 st.session_state["scroll_target"] = "step-1"
                 st.rerun()
@@ -316,7 +316,7 @@ def render():
         st.divider()
         st.markdown('<div id="recipe-view" style="scroll-margin-top: 80px;"></div>', unsafe_allow_html=True)
         st.success(f"RECIPE READY // [{params.get('coffee_type', 'HOT')}] {params.get('water_per_cup', 300)}ml x {params.get('cup_count', 1)} CUP(S)")
-        st.markdown(f"### 📖 {recipe.get('recipe_title', '-')}")
+        st.markdown(f"### {recipe.get('recipe_title', '-')}")
 
         c_p1, c_p2 = st.columns(2)
         with c_p1:
@@ -329,43 +329,43 @@ def render():
 
         ice_val = recipe.get('ice_amount', 'なし')
         if ice_val and ice_val != 'なし' and ice_val != '-':
-            st.info(f"🧊 **PRE-ICE (IN SERVER)**: {ice_val}")
+            st.info(f"PRE-ICE (IN SERVER): {ice_val}")
 
-        with st.expander("✨ GEAR SPECIFICATIONS", expanded=False):
+        with st.expander("GEAR SPECIFICATIONS", expanded=False):
             st.write(f"- **DRIPPER**: {recipe.get('dripper', '-')}")
             st.write(f"- **FILTER**: {recipe.get('filter', '-')}")
             st.write(f"- **GRINDER**: {recipe.get('grinder', '-')}")
 
-        st.markdown("### 📊 STEP-BY-STEP SEQUENCE")
+        st.markdown("### STEP-BY-STEP SEQUENCE")
         steps = recipe.get('recipe_steps', [])
         if steps and isinstance(steps, list):
             for s in steps:
                 if isinstance(s, dict):
                     st.markdown(
                         f"""
-                        <div style="background-color: #0A0A0A; padding: 12px 16px; border: 1px solid #FFFFFF; border-left: 4px solid #FF9900; margin-bottom: 12px;">
-                            <div style="font-family: 'Silkscreen', monospace; font-size: 1.0em; font-weight: bold; color: #FFFFFF; display: flex; justify-content: space-between;">
+                        <div style="background-color: #0D0D0D; padding: 12px 16px; border: 1px solid #262626; border-left: 3px solid #FF9900; margin-bottom: 12px; border-radius: 4px;">
+                            <div style="font-size: 0.95em; font-weight: bold; color: #FFFFFF; display: flex; justify-content: space-between;">
                                 <span>STEP {s.get('step_number', '-')}: {s.get('purpose', '-')}</span>
-                                <span style="color: #FF9900;">⏱️ {s.get('time', '-')}</span>
+                                <span style="color: #FF9900;">{s.get('time', '-')}</span>
                             </div>
                             <div style="margin-top: 8px; font-size: 0.9em; color: #CCCCCC;">
-                                💧 <b>POUR:</b> {s.get('pour_amount', '-')} ｜ 🏁 <b>TOTAL:</b> <span style="font-weight: bold; color: #FFFFFF;">{s.get('total_amount', '-')}</span>
+                                <b>POUR:</b> {s.get('pour_amount', '-')} ｜ <b>TOTAL:</b> <span style="font-weight: bold; color: #FFFFFF;">{s.get('total_amount', '-')}</span>
                             </div>
                             <div style="margin-top: 6px; font-size: 0.85em; color: #888888;">
-                                🌀 <b>METHOD:</b> {s.get('pouring_method', '-')}（{s.get('flow_rate', '-')}）
+                                <b>METHOD:</b> {s.get('pouring_method', '-')}（{s.get('flow_rate', '-')}）
                             </div>
                         </div>
                         """,
                         unsafe_allow_html=True
                     )
 
-        st.info(f"💡 **BREW NOTES**: {recipe.get('notes', '-')}")
+        st.info(f"BREW NOTES: {recipe.get('notes', '-')}")
 
-        with st.expander("🔍 RAW JSON DATA"):
+        with st.expander("RAW JSON DATA"):
             st.json(recipe)
 
         st.divider()
-        st.subheader("📝 SESSION EVALUATION")
+        st.subheader("SESSION EVALUATION")
         f_col1, f_col2 = st.columns(2)
         with f_col1:
             drip_rating = st.slider("RATING (1-5)", min_value=1, max_value=5, value=3, key="drip_input_rating")
@@ -377,7 +377,7 @@ def render():
             drip_goals = st.multiselect("NEXT GOALS", prompts.TARGET_GOALS_OPTIONS, default=["現状維持"], key="drip_input_goals")
             drip_comment = st.text_input("NOTES / COMMENT", placeholder="e.g. Slight astringency in finish", key="drip_input_comment")
 
-        if st.button("💾 SAVE EVALUATION", key="btn_save_recipe_with_eval", use_container_width=True, type="primary"):
+        if st.button("SAVE EVALUATION", key="btn_save_recipe_with_eval", use_container_width=True, type="primary"):
             try:
                 final_payload = {
                     "bean_id": params.get("bean_id"),
