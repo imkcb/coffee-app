@@ -94,7 +94,6 @@ with tab1:
                 value=st.session_state["default_cup_count"]
             )
         with col_sub2:
-            # 過去日を上限（本日）まで自由に選択可能にする設定へ変更
             today_date = datetime.date.today()
             roast_date_input = st.date_input(
                 "焙煎日（任意）",
@@ -154,6 +153,7 @@ with tab1:
             
             recipe_data, error_msg = ai.generate_recipe(prompt)
             if recipe_data:
+                # ★ DB保存はせず、セッション上でのみ保持（再生成時はそのまま綺麗に上書きされる）
                 st.session_state["current_recipe"] = recipe_data
                 st.session_state["current_drip_params"] = {
                     "bean_name": bean_choice, "bean_id": chosen_bean_id,
@@ -165,6 +165,7 @@ with tab1:
                 with st.expander("🔍 エラー詳細"):
                     st.write(error_msg)
 
+    # 現在生成されたレシピの表示
     if "current_recipe" in st.session_state and st.session_state["current_recipe"]:
         recipe = st.session_state["current_recipe"]
         params = st.session_state["current_drip_params"]
@@ -206,7 +207,7 @@ with tab1:
             st.json(recipe)
 
         st.divider()
-        st.subheader("📝 今回の抽出評価・フィードバック（詳細設定）")
+        st.subheader("📝 今回の抽出評価・フィードバック")
         f_col1, f_col2 = st.columns(2)
         with f_col1:
             drip_rating = st.slider("総合満足度", min_value=1, max_value=5, value=3, key="drip_input_rating")
@@ -218,6 +219,7 @@ with tab1:
             drip_goals = st.multiselect("次回どうしたいか（複数選択可）", prompts.TARGET_GOALS_OPTIONS, default=["現状維持"], key="drip_input_goals")
             drip_comment = st.text_input("自由コメント（任意）", placeholder="例: 後半の落ちが遅く渋みが少し出た", key="drip_input_comment")
         
+        # ★ ユーザーがこのボタンを押した時のみ、DB（Supabase）に1回だけ保存される
         if st.button("💾 このレシピと評価を保存する", key="btn_save_recipe_with_eval", use_container_width=True):
             try:
                 db.insert_drip_log({
@@ -234,7 +236,7 @@ with tab1:
                         "coffee_type": params.get("coffee_type"), "water_per_cup": params.get("water_per_cup")
                     }
                 })
-                st.success("レシピと詳細評価を正常に保存しました！")
+                st.success("レシピと評価をDBへ保存しました！")
                 del st.session_state["current_recipe"]
                 del st.session_state["current_drip_params"]
                 st.rerun()
