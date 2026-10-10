@@ -2,9 +2,9 @@ import streamlit as st
 import db
 
 def render():
+    st.markdown('<div class="beans-tab-marker"></div>', unsafe_allow_html=True)
     st.markdown("### BEANS")
 
-    # 豆登録フォーム
     st.markdown("#### ADD BEAN")
     with st.form("add_bean_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
@@ -38,13 +38,11 @@ def render():
 
     st.divider()
 
-    # 登録済み豆一覧
     st.markdown("#### BEAN LIST")
     beans_data = db.get_beans()
     if beans_data:
         sorted_beans = sorted(beans_data, key=lambda x: str(x.get("name", "")).lower())
         for bean in sorted_beans:
-            b_id = bean.get("id")
             b_name = bean.get("name", "-")
             b_shop = bean.get("shop", "Unknown")
             b_roast = bean.get("roast_level", "-")

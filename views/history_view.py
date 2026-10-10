@@ -2,6 +2,7 @@ import streamlit as st
 import db
 
 def render():
+    st.markdown('<div class="logs-tab-marker"></div>', unsafe_allow_html=True)
     st.markdown("### LOGS")
 
     drip_logs = db.get_drip_logs()
@@ -19,7 +20,6 @@ def render():
         st.markdown(f"#### TOTAL SESSIONS ({len(confirmed_logs)})")
 
         for log in confirmed_logs:
-            log_id = log.get("id")
             created_at = str(log.get("created_at", ""))[:10]
             data = log.get("data") or {}
             bean_name = data.get("bean_name", "Unknown Bean")

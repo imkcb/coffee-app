@@ -58,6 +58,9 @@ def format_step_time(raw_time):
     return f"-{raw_str}"
 
 def render():
+    # タブ識別用マーカー
+    st.markdown('<div class="drip-tab-marker"></div>', unsafe_allow_html=True)
+
     user_session_id = get_session_id()
     theme_mode = st.session_state.get("theme_mode", "DARK")
 
@@ -97,7 +100,7 @@ def render():
         "Brazil Santos", "Ethiopia Yirgacheffe", "Guatemala Antigua"
     ]
 
-    # セッション状態の初期化（初期選択は全て未選択 None）
+    # セッション状態の初期化（初期選択は全て None = 無色）
     if "wizard_step" not in st.session_state:
         st.session_state["wizard_step"] = 1
     if "sel_type" not in st.session_state:

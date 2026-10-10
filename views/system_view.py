@@ -2,6 +2,7 @@ import streamlit as st
 import os
 
 def render():
+    st.markdown('<div class="system-tab-marker"></div>', unsafe_allow_html=True)
     st.markdown("### SYSTEM")
 
     st.markdown("#### THEME")

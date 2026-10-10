@@ -2,6 +2,7 @@ import streamlit as st
 import db
 
 def render():
+    st.markdown('<div class="gear-tab-marker"></div>', unsafe_allow_html=True)
     st.markdown("### GEAR")
 
     st.markdown("#### ADD GEAR")
