@@ -21,7 +21,7 @@ def render():
             st.session_state["theme_mode"] = "SYSTEM"
             st.rerun()
 
-    st.markdown("---")
+    st.divider()
     st.markdown("#### INFO")
     
     c1, c2 = st.columns(2)

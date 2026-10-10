@@ -14,7 +14,6 @@ def get_session_id():
         return ctx.session_id
     return "default_session"
 
-# スクロールヘルパー関数
 def auto_scroll_to(element_id):
     js_code = f"""
     <script>
@@ -28,7 +27,6 @@ def auto_scroll_to(element_id):
     """
     components.html(js_code, height=0)
 
-# 蒸らし時間を「xx sec」のみに整形
 def format_bloom_time(raw_bloom):
     if not raw_bloom or raw_bloom == '-':
         return "-"
@@ -41,7 +39,6 @@ def format_bloom_time(raw_bloom):
         return f"{int(match_sec.group(1))} sec"
     return raw_str
 
-# ステップ時間を「-0:45」のように終了時間のみの形式に整形
 def format_step_time(raw_time):
     if not raw_time or raw_time == '-':
         return "-"
@@ -62,6 +59,21 @@ def format_step_time(raw_time):
 
 def render():
     user_session_id = get_session_id()
+    theme_mode = st.session_state.get("theme_mode", "DARK")
+
+    # テーマに応じたステップカードのカラーリング動的切り替え
+    if theme_mode == "LIGHT":
+        accent_color = "#008A43"
+        card_bg = "#EBEBEF"
+        card_border = "#CCCCCC"
+        main_txt = "#111111"
+        sub_txt = "#555555"
+    else:
+        accent_color = "#00FF66"
+        card_bg = "#0D0D0D"
+        card_border = "#262626"
+        main_txt = "#FFFFFF"
+        sub_txt = "#888888"
 
     beans_data = db.get_beans()
     equipment_data = db.get_equipment()
@@ -369,14 +381,14 @@ def render():
             st.metric("GRIND", recipe.get('grind_setting', '-'))
             st.metric("BLOOM", formatted_bloom)
 
-        # GEAR 表示 (常にオープン)
+        # GEAR 表示 (常にオープン & テーマ対応)
         st.markdown("#### GEAR")
         st.markdown(
             f"""
-            <div style="background-color: #0D0D0D; padding: 12px 16px; border: 1px solid #262626; border-radius: 4px; margin-bottom: 16px;">
-                <div style="color: #A3A3A3; font-size: 0.85rem; margin-bottom: 4px;">DRIPPER: <span style="color: #FFFFFF; font-weight: bold;">{recipe.get('dripper', '-')}</span></div>
-                <div style="color: #A3A3A3; font-size: 0.85rem; margin-bottom: 4px;">FILTER: <span style="color: #FFFFFF; font-weight: bold;">{recipe.get('filter', '-')}</span></div>
-                <div style="color: #A3A3A3; font-size: 0.85rem;">GRINDER: <span style="color: #FFFFFF; font-weight: bold;">{recipe.get('grinder', '-')}</span></div>
+            <div style="background-color: {card_bg}; padding: 12px 16px; border: 1px solid {card_border}; border-radius: 4px; margin-bottom: 16px;">
+                <div style="color: {sub_txt}; font-size: 0.85rem; margin-bottom: 4px;">DRIPPER: <span style="color: {main_txt}; font-weight: bold;">{recipe.get('dripper', '-')}</span></div>
+                <div style="color: {sub_txt}; font-size: 0.85rem; margin-bottom: 4px;">FILTER: <span style="color: {main_txt}; font-weight: bold;">{recipe.get('filter', '-')}</span></div>
+                <div style="color: {sub_txt}; font-size: 0.85rem;">GRINDER: <span style="color: {main_txt}; font-weight: bold;">{recipe.get('grinder', '-')}</span></div>
             </div>
             """,
             unsafe_allow_html=True
@@ -394,17 +406,17 @@ def render():
                     step_time = format_step_time(s.get('time', '-'))
                     st.markdown(
                         f"""
-                        <div style="background-color: #0D0D0D; padding: 12px 16px; border: 1px solid #262626; border-left: 3px solid #00FF66; margin-bottom: 12px; border-radius: 4px;">
-                            <div style="font-size: 1.0em; font-weight: bold; color: #FFFFFF;">
+                        <div style="background-color: {card_bg}; padding: 12px 16px; border: 1px solid {card_border}; border-left: 4px solid {accent_color}; margin-bottom: 12px; border-radius: 4px;">
+                            <div style="font-size: 1.0em; font-weight: bold; color: {main_txt};">
                                 STEP {s.get('step_number', '-')}: {s.get('purpose', '-')}
                             </div>
-                            <div style="font-size: 0.9em; font-weight: bold; color: #00FF66; margin-top: 2px;">
+                            <div style="font-size: 0.9em; font-weight: bold; color: {accent_color}; margin-top: 2px;">
                                 {step_time}
                             </div>
-                            <div style="margin-top: 8px; font-size: 0.9em; color: #CCCCCC;">
-                                <b>POUR:</b> {s.get('pour_amount', '-')} ｜ <b>TOTAL:</b> <span style="font-weight: bold; color: #FFFFFF;">{s.get('total_amount', '-')}</span>
+                            <div style="margin-top: 8px; font-size: 0.9em; color: {main_txt};">
+                                <b>POUR:</b> {s.get('pour_amount', '-')} ｜ <b>TOTAL:</b> <span style="font-weight: bold; color: {accent_color};">{s.get('total_amount', '-')}</span>
                             </div>
-                            <div style="margin-top: 4px; font-size: 0.85em; color: #888888;">
+                            <div style="margin-top: 4px; font-size: 0.85em; color: {sub_txt};">
                                 <b>METHOD:</b> {s.get('pouring_method', '-')}（{s.get('flow_rate', '-')}）
                             </div>
                         </div>

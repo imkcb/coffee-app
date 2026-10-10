@@ -2,81 +2,60 @@ import streamlit as st
 import db
 
 def render():
-    equipment_data = db.get_equipment()
+    st.markdown("### GEAR")
 
-    st.header("🛠️ 器具管理")
-    st.subheader("器具の新規登録")
-    eq_category = st.selectbox("カテゴリ", ["ドリッパー", "ミル（グラインダー）", "フィルター", "サーバー", "その他"], key="input_eq_category")
-    eq_name = st.text_input("器具の名前（必須）", key="input_eq_name")
-    eq_brand = st.text_input("ブランド / メーカー", key="input_eq_brand")
+    st.markdown("#### ADD GEAR")
+    with st.form("add_gear_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            gear_type = st.selectbox("GEAR TYPE", ["DRIPPER", "FILTER", "GRINDER", "KETTLE", "OTHER"])
+            gear_name = st.text_input("GEAR NAME", placeholder="例: HARIO V60 01")
+        with col2:
+            brand = st.text_input("BRAND / MAKER", placeholder="例: HARIO")
+            notes = st.text_input("NOTES", placeholder="例: 樹脂製・1~2人用（任意）")
 
-    if st.button("☕ 器具を登録する", key="btn_add_equipment"):
-        if eq_name:
-            try:
-                db.insert_equipment({"category": eq_category, "name": eq_name, "brand": eq_brand, "is_active": True})
-                st.success(f"「{eq_name}」を登録しました！")
-                st.rerun()
-            except Exception as e:
-                st.error(f"登録エラー: {e}")
+        submitted = st.form_submit_button("REGISTER GEAR", type="primary", use_container_width=True)
+        if submitted:
+            if gear_name:
+                try:
+                    payload = {
+                        "type": gear_type,
+                        "name": gear_name,
+                        "brand": brand,
+                        "notes": notes,
+                        "is_active": True
+                    }
+                    db.insert_equipment(payload)
+                    st.success("GEAR REGISTERED!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"ERROR: {e}")
+            else:
+                st.warning("PLEASE INPUT GEAR NAME")
 
     st.divider()
-    st.subheader("登録済みの器具一覧")
+
+    st.markdown("#### GEAR LIST")
+    equipment_data = db.get_equipment()
     if equipment_data:
-        for eq in equipment_data:
-            eq_id = eq.get("id")
-            is_act = eq.get("is_active", True)
-            if is_act is None: is_act = True
+        sorted_gear = sorted(equipment_data, key=lambda x: (str(x.get("type", "")), str(x.get("name", ""))))
+        for gear in sorted_gear:
+            g_name = gear.get("name", "-")
+            g_type = gear.get("type", "-")
+            g_brand = gear.get("brand", "")
+            g_notes = gear.get("notes", "")
 
-            edit_eq_key = f"edit_eq_mode_{eq_id}"
-            if edit_eq_key not in st.session_state: st.session_state[edit_eq_key] = False
-
-            if not st.session_state[edit_eq_key]:
-                col_info, col_toggle, col_edit, col_del = st.columns([3, 1.5, 1, 1])
-                with col_info:
-                    status_str = "🟢 利用可能" if is_act else "🔴 欠品中（AI対象外）"
-                    brand_str = f"（{eq.get('brand')}）" if eq.get('brand') else ""
-                    st.markdown(f"・ **[{eq.get('category')}] {eq.get('name')}** {brand_str} - {status_str}")
-                with col_toggle:
-                    new_status = st.toggle("AI提案に含める", value=is_act, key=f"toggle_eq_{eq_id}")
-                    if new_status != is_act:
-                        db.update_equipment(eq_id, {"is_active": new_status})
-                        st.rerun()
-                with col_edit:
-                    if st.button("✏️ 編集", key=f"btn_edit_mode_eq_{eq_id}"):
-                        st.session_state[edit_eq_key] = True
-                        st.rerun()
-                with col_del:
-                    if st.button("🗑️ 削除", key=f"del_eq_{eq_id}"):
-                        try:
-                            db.delete_equipment(eq_id)
-                            st.success("削除しました。")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"削除エラー: {e}")
-            else:
-                st.markdown("#### ✏️ 器具情報の編集")
-                eq_cat_opts = ["ドリッパー", "ミル（グラインダー）", "フィルター", "サーバー", "その他"]
-                u_eq_cat = st.selectbox("カテゴリ", eq_cat_opts, index=eq_cat_opts.index(eq.get("category")) if eq.get("category") in eq_cat_opts else 0, key=f"u_eqcat_{eq_id}")
-                u_eq_name = st.text_input("器具の名前", value=eq.get("name") or "", key=f"u_eqname_{eq_id}")
-                u_eq_brand = st.text_input("ブランド / メーカー", value=eq.get("brand") or "", key=f"u_eqbrand_{eq_id}")
-
-                col_u_save, col_u_cancel = st.columns([1, 1])
-                with col_u_save:
-                    if st.button("💾 更新を保存", key=f"btn_save_u_eq_{eq_id}"):
-                        try:
-                            db.update_equipment(eq_id, {
-                                "category": u_eq_cat,
-                                "name": u_eq_name,
-                                "brand": u_eq_brand
-                            })
-                            st.session_state[edit_eq_key] = False
-                            st.success("器具情報を更新しました！")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"更新エラー: {e}")
-                with col_u_cancel:
-                    if st.button("キャンセル", key=f"btn_cancel_u_eq_{eq_id}"):
-                        st.session_state[edit_eq_key] = False
-                        st.rerun()
+            st.markdown(
+                f"""
+                <div style="border: 1px solid #333333; padding: 12px; border-radius: 4px; margin-bottom: 10px;">
+                    <div style="font-weight: bold; font-size: 1.0rem;">[{g_type}] {g_name}</div>
+                    <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 4px;">
+                        BRAND: {g_brand if g_brand else '-'}
+                    </div>
+                    {f'<div style="font-size: 0.8rem; opacity: 0.6; margin-top: 2px;">{g_notes}</div>' if g_notes else ''}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
     else:
-        st.info("登録されている器具はまだありません。")
+        st.info("NO GEAR REGISTERED YET.")

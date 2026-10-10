@@ -24,19 +24,31 @@ if "theme_mode" not in st.session_state:
 
 theme_mode = st.session_state["theme_mode"]
 
-# テーマ別ベースCSS変数定義
+# --- テーマ別カラーパレット定義 ---
 if theme_mode == "LIGHT":
     bg_color = "#F5F5F7"
     text_color = "#111111"
-    sub_text_color = "#666666"
-    card_bg = "#FFFFFF"
-    border_color = "#E5E5E5"
+    sub_text_color = "#555555"
+    card_bg = "#EBEBEF"
+    border_color = "#CCCCCC"
     input_bg = "#FFFFFF"
     tab_unselected = "#666666"
-    btn_bg = "#E8E8ED"
-    btn_border = "#D1D1D6"
+    btn_bg = "#E0E0E5"
+    btn_border = "#B8B8C0"
     btn_text = "#111111"
-else:  # DARK または SYSTEM
+    
+    # LIGHTモード用 高コントラストアクセント
+    c_drip = "#008A43"    # Deep Emerald Green
+    c_drip_txt = "#FFFFFF"
+    c_beans = "#C70063"   # Deep Magenta
+    c_beans_txt = "#FFFFFF"
+    c_gear = "#A67C00"    # Deep Gold
+    c_gear_txt = "#FFFFFF"
+    c_logs = "#0077B6"    # Deep Cyan/Blue
+    c_logs_txt = "#FFFFFF"
+    c_system = "#7A00CC"  # Deep Violet
+    c_system_txt = "#FFFFFF"
+else:  # DARK または SYSTEM (デフォルトDARK)
     bg_color = "#000000"
     text_color = "#E0E0E0"
     sub_text_color = "#888888"
@@ -47,22 +59,29 @@ else:  # DARK または SYSTEM
     btn_bg = "#171717"
     btn_border = "#404040"
     btn_text = "#FFFFFF"
+    
+    # DARKモード用 蛍光アクセント
+    c_drip = "#00FF66"    # Neon Green
+    c_drip_txt = "#000000"
+    c_beans = "#FF007F"   # Neon Pink
+    c_beans_txt = "#FFFFFF"
+    c_gear = "#FFEE00"    # Neon Yellow
+    c_gear_txt = "#000000"
+    c_logs = "#00E5FF"    # Neon Cyan
+    c_logs_txt = "#000000"
+    c_system = "#B026FF"  # Neon Purple
+    c_system_txt = "#FFFFFF"
 
 # 2. GLOBAL & TAB-ACCENT CSS
 elektron_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
 
-/* ベースフォント & 背景 */
-html, body, .stApp, [data-testid="stAppViewContainer"] {{
+/* 全体背景 & ベーステキスト */
+html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{
     background-color: {bg_color} !important;
     color: {text_color} !important;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-}}
-
-/* ヘッダー背景 */
-[data-testid="stHeader"] {{
-    background-color: {bg_color} !important;
 }}
 
 /* 8bitフォントはメインタイトルとH1~H3のみ */
@@ -73,26 +92,29 @@ h1, h2, h3, .potlog-title-text {{
     letter-spacing: 1px;
 }}
 
-h4, h5, h6 {{
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-    font-weight: 600 !important;
+h4, h5, h6, label, p, span, div {{
     color: {text_color} !important;
-    letter-spacing: 0.5px;
+}}
+
+/* LIGHTモード時の視認性最適化（文字白化の完全防止） */
+label, .stMarkdown p, [data-testid="stWidgetLabel"] p {{
+    color: {text_color} !important;
+    font-weight: 600 !important;
 }}
 
 /* POTLOG タイトル */
 .potlog-title-text {{
     font-size: 2.2rem;
     font-weight: 700;
-    color: {text_color};
+    color: {text_color} !important;
     margin-bottom: 20px;
 }}
 
 /* タブバー共通設定 */
 [data-testid="stTabs"] [data-baseweb="tab-list"] {{
-    gap: 8px;
-    background-color: {bg_color};
-    border-bottom: 1px solid {border_color};
+    gap: 6px;
+    background-color: {bg_color} !important;
+    border-bottom: 1px solid {border_color} !important;
 }}
 
 [data-testid="stTabs"] [data-baseweb="tab"] {{
@@ -106,30 +128,26 @@ h4, h5, h6 {{
     padding: 8px 12px !important;
 }}
 
-/* 各タブ選択時のネオンカラーアクセント */
+/* タブ選択時のアクセントライン */
 [data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(1)[aria-selected="true"] {{
-    color: #00FF66 !important; /* DRIP: 蛍光黄緑 */
-    border-bottom: 2px solid #00FF66 !important;
+    color: {c_drip} !important;
+    border-bottom: 2px solid {c_drip} !important;
 }}
-
 [data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(2)[aria-selected="true"] {{
-    color: #FF007F !important; /* BEANS: 蛍光ピンク */
-    border-bottom: 2px solid #FF007F !important;
+    color: {c_beans} !important;
+    border-bottom: 2px solid {c_beans} !important;
 }}
-
 [data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(3)[aria-selected="true"] {{
-    color: #FFEE00 !important; /* GEAR: 蛍光黄色 */
-    border-bottom: 2px solid #FFEE00 !important;
+    color: {c_gear} !important;
+    border-bottom: 2px solid {c_gear} !important;
 }}
-
 [data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(4)[aria-selected="true"] {{
-    color: #00E5FF !important; /* LOGS: 蛍光ブルー */
-    border-bottom: 2px solid #00E5FF !important;
+    color: {c_logs} !important;
+    border-bottom: 2px solid {c_logs} !important;
 }}
-
 [data-testid="stTabs"] [data-baseweb="tab-list"] button:nth-child(5)[aria-selected="true"] {{
-    color: #B026FF !important; /* SYSTEM: 蛍光パープル */
-    border-bottom: 2px solid #B026FF !important;
+    color: {c_system} !important;
+    border-bottom: 2px solid {c_system} !important;
 }}
 
 /* ボタン基本構造 */
@@ -145,57 +163,42 @@ div.stButton > button {{
     transition: all 0.15s ease;
 }}
 
-/* DRIP (蛍光黄緑 #00FF66) */
+div.stButton > button:hover {{
+    border-color: {text_color} !important;
+}}
+
+/* --- タブ別 PRIMARY ボタン選択カラー --- */
 .tab-drip div.stButton > button[kind="primary"] {{
-    background-color: #00FF66 !important;
-    border-color: #00FF66 !important;
-    color: #000000 !important;
-}}
-.tab-drip div[data-testid="stMetricValue"] {{
-    color: #00FF66 !important;
+    background-color: {c_drip} !important;
+    border-color: {c_drip} !important;
+    color: {c_drip_txt} !important;
 }}
 
-/* BEANS (蛍光ピンク #FF007F) */
 .tab-beans div.stButton > button[kind="primary"] {{
-    background-color: #FF007F !important;
-    border-color: #FF007F !important;
-    color: #FFFFFF !important;
-}}
-.tab-beans div[data-testid="stMetricValue"] {{
-    color: #FF007F !important;
+    background-color: {c_beans} !important;
+    border-color: {c_beans} !important;
+    color: {c_beans_txt} !important;
 }}
 
-/* GEAR (蛍光黄色 #FFEE00) */
 .tab-gear div.stButton > button[kind="primary"] {{
-    background-color: #FFEE00 !important;
-    border-color: #FFEE00 !important;
-    color: #000000 !important;
-}}
-.tab-gear div[data-testid="stMetricValue"] {{
-    color: #FFEE00 !important;
+    background-color: {c_gear} !important;
+    border-color: {c_gear} !important;
+    color: {c_gear_txt} !important;
 }}
 
-/* LOGS (蛍光ブルー #00E5FF) */
 .tab-logs div.stButton > button[kind="primary"] {{
-    background-color: #00E5FF !important;
-    border-color: #00E5FF !important;
-    color: #000000 !important;
-}}
-.tab-logs div[data-testid="stMetricValue"] {{
-    color: #00E5FF !important;
+    background-color: {c_logs} !important;
+    border-color: {c_logs} !important;
+    color: {c_logs_txt} !important;
 }}
 
-/* SYSTEM (蛍光パープル #B026FF) */
 .tab-system div.stButton > button[kind="primary"] {{
-    background-color: #B026FF !important;
-    border-color: #B026FF !important;
-    color: #FFFFFF !important;
-}}
-.tab-system div[data-testid="stMetricValue"] {{
-    color: #B026FF !important;
+    background-color: {c_system} !important;
+    border-color: {c_system} !important;
+    color: {c_system_txt} !important;
 }}
 
-/* メトリック・カード表示 */
+/* --- メトリック・入力フォーム表示 --- */
 div[data-testid="stMetric"] {{
     border: 1px solid {border_color} !important;
     background-color: {card_bg} !important;
@@ -207,6 +210,12 @@ div[data-testid="stMetricLabel"] {{
     color: {sub_text_color} !important;
     font-size: 0.75rem !important;
 }}
+
+.tab-drip div[data-testid="stMetricValue"] {{ color: {c_drip} !important; }}
+.tab-beans div[data-testid="stMetricValue"] {{ color: {c_beans} !important; }}
+.tab-gear div[data-testid="stMetricValue"] {{ color: {c_gear} !important; }}
+.tab-logs div[data-testid="stMetricValue"] {{ color: {c_logs} !important; }}
+.tab-system div[data-testid="stMetricValue"] {{ color: {c_system} !important; }}
 
 /* 入力フォーム類 */
 input, select, textarea, div[data-baseweb="select"] {{
