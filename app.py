@@ -172,25 +172,28 @@ div[data-baseweb="tab-highlight-point"] {{
 .stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) button[data-testid="stBaseButton-primary"] *,
 .stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) button[kind="primary"] * {{
     color: {c_drip_txt} !important;
+    -webkit-text-fill-color: {c_drip_txt} !important;
     font-weight: 700 !important;
 }}
 .stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) [data-baseweb="slider"] div[role="slider"] {{ background-color: {c_drip} !important; border-color: {c_drip} !important; }}
 .stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) [data-baseweb="slider"] > div > div > div {{ background-color: {c_drip} !important; }}
 
-/* マルチセレクトタグ内部（文字・アイコン）のチャコール色化 (#1A1A1A) */
-.stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) span[data-baseweb="tag"] {{
+/* マルチセレクトタグ全体の完全作色設定 (白文字の徹底排除) */
+[data-baseweb="tag"] {{
     background-color: {c_drip} !important;
     border-color: {c_drip} !important;
 }}
-.stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) span[data-baseweb="tag"] *,
-.stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) span[data-baseweb="tag"] span,
-.stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) span[data-baseweb="tag"] div,
-.stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) span[data-baseweb="tag"] svg,
-.stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) span[data-baseweb="tag"] path {{
+[data-baseweb="tag"] *,
+[data-baseweb="tag"] span,
+[data-baseweb="tag"] div,
+[data-baseweb="tag"] svg,
+[data-baseweb="tag"] path {{
     color: {c_drip_txt} !important;
     fill: {c_drip_txt} !important;
+    -webkit-text-fill-color: {c_drip_txt} !important;
     font-weight: 700 !important;
 }}
+
 .stApp div[data-testid="stTabPanel"]:has(.drip-tab-marker) div[data-testid="stMetricValue"] {{ color: {c_drip} !important; }}
 
 /* 2. BEANS タブ (蛍光ピンク #FF007F) */
@@ -204,6 +207,7 @@ div[data-baseweb="tab-highlight-point"] {{
 .stApp div[data-testid="stTabPanel"]:has(.beans-tab-marker) button[data-testid="stBaseButton-primary"] *,
 .stApp div[data-testid="stTabPanel"]:has(.beans-tab-marker) button[kind="primary"] * {{
     color: {c_beans_txt} !important;
+    -webkit-text-fill-color: {c_beans_txt} !important;
     font-weight: 700 !important;
 }}
 .stApp div[data-testid="stTabPanel"]:has(.beans-tab-marker) div[data-testid="stMetricValue"] {{ color: {c_beans} !important; }}
@@ -219,6 +223,7 @@ div[data-baseweb="tab-highlight-point"] {{
 .stApp div[data-testid="stTabPanel"]:has(.gear-tab-marker) button[data-testid="stBaseButton-primary"] *,
 .stApp div[data-testid="stTabPanel"]:has(.gear-tab-marker) button[kind="primary"] * {{
     color: {c_gear_txt} !important;
+    -webkit-text-fill-color: {c_gear_txt} !important;
     font-weight: 700 !important;
 }}
 .stApp div[data-testid="stTabPanel"]:has(.gear-tab-marker) div[data-testid="stMetricValue"] {{ color: {c_gear} !important; }}
@@ -234,6 +239,7 @@ div[data-baseweb="tab-highlight-point"] {{
 .stApp div[data-testid="stTabPanel"]:has(.logs-tab-marker) button[data-testid="stBaseButton-primary"] *,
 .stApp div[data-testid="stTabPanel"]:has(.logs-tab-marker) button[kind="primary"] * {{
     color: {c_logs_txt} !important;
+    -webkit-text-fill-color: {c_logs_txt} !important;
     font-weight: 700 !important;
 }}
 .stApp div[data-testid="stTabPanel"]:has(.logs-tab-marker) div[data-testid="stMetricValue"] {{ color: {c_logs} !important; }}
@@ -249,6 +255,7 @@ div[data-baseweb="tab-highlight-point"] {{
 .stApp div[data-testid="stTabPanel"]:has(.system-tab-marker) button[data-testid="stBaseButton-primary"] *,
 .stApp div[data-testid="stTabPanel"]:has(.system-tab-marker) button[kind="primary"] * {{
     color: {c_system_txt} !important;
+    -webkit-text-fill-color: {c_system_txt} !important;
     font-weight: 700 !important;
 }}
 .stApp div[data-testid="stTabPanel"]:has(.system-tab-marker) div[data-testid="stMetricValue"] {{ color: {c_system} !important; }}
