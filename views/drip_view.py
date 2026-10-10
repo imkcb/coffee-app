@@ -1,5 +1,6 @@
 import datetime
 import streamlit as st
+import streamlit.components.v1 as components
 from streamlit.runtime.scriptrunner import get_script_run_ctx
 
 import db
@@ -11,6 +12,20 @@ def get_session_id():
     if ctx:
         return ctx.session_id
     return "default_session"
+
+# 指定要素を画面中央へ滑らかに自動スクロールさせるヘルパー関数
+def auto_scroll_to(element_id):
+    js_code = f"""
+    <script>
+        setTimeout(function() {{
+            var element = window.parent.document.getElementById('{element_id}');
+            if (element) {{
+                element.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+            }}
+        }}, 150);
+    </script>
+    """
+    components.html(js_code, height=0)
 
 def render():
     user_session_id = get_session_id()
@@ -38,7 +53,7 @@ def render():
         "エチオピア イルガチェフェ", "グアテマラ アンティグア", "ブラジル サントス"
     ]
 
-    # ステップ管理用のセッション初期化
+    # セッション状態の初期化
     if "wizard_step" not in st.session_state:
         st.session_state["wizard_step"] = 1
     if "sel_type" not in st.session_state:
@@ -55,7 +70,7 @@ def render():
     if "water_per_cup" not in st.session_state:
         st.session_state["water_per_cup"] = 300
 
-    # リロード時、ドラフトが存在すればレシピ復元
+    # リロード時、ドラフトが存在すれば復元
     if "current_recipe" not in st.session_state and my_draft_log:
         draft_data = my_draft_log.get("data") or {}
         if draft_data.get("recipe"):
@@ -71,9 +86,10 @@ def render():
             }
             st.session_state["draft_log_id"] = my_draft_log.get("id")
 
-    st.header("1. 条件選択（ポチポチ進むステップ形式）")
+    st.header("1. 条件選択")
 
     # --- STEP 1: 抽出タイプ ---
+    st.markdown('<div id="step-1"></div>', unsafe_allow_html=True)
     st.markdown("#### ① 抽出タイプ")
     type_col1, type_col2 = st.columns(2)
     with type_col1:
@@ -81,17 +97,20 @@ def render():
             st.session_state["sel_type"] = "ホット"
             if st.session_state["wizard_step"] == 1:
                 st.session_state["wizard_step"] = 2
+            st.session_state["scroll_target"] = "step-2"
             st.rerun()
     with type_col2:
         if st.button("🧊 アイス", use_container_width=True, type="primary" if st.session_state["sel_type"] == "アイス" and st.session_state["wizard_step"] > 1 else "secondary"):
             st.session_state["sel_type"] = "アイス"
             if st.session_state["wizard_step"] == 1:
                 st.session_state["wizard_step"] = 2
+            st.session_state["scroll_target"] = "step-2"
             st.rerun()
 
     # --- STEP 2: 購入店選択 ---
     if st.session_state["wizard_step"] >= 2:
         st.markdown("---")
+        st.markdown('<div id="step-2"></div>', unsafe_allow_html=True)
         st.markdown("#### ② 購入店を選択")
         shops = sorted(list(set([b.get("shop") for b in beans_data if b.get("shop")])))
         shop_options = ["すべて"] + shops
@@ -105,9 +124,10 @@ def render():
                     st.session_state["sel_shop"] = shop_item
                     if st.session_state["wizard_step"] == 2:
                         st.session_state["wizard_step"] = 3
+                    st.session_state["scroll_target"] = "step-3"
                     st.rerun()
 
-    # 豆リストのフィルタリング
+    # 豆フィルタリング
     if st.session_state["sel_shop"] != "すべて":
         filtered_beans = [b for b in beans_data if b.get("shop") == st.session_state["sel_shop"]]
     else:
@@ -120,6 +140,7 @@ def render():
     # --- STEP 3: 豆選択 ---
     if st.session_state["wizard_step"] >= 3:
         st.markdown("---")
+        st.markdown('<div id="step-3"></div>', unsafe_allow_html=True)
         st.markdown("#### ③ 豆を選択")
         bean_cols = st.columns(1 if len(filtered_bean_names) == 1 else 2)
         for idx, b_name in enumerate(filtered_bean_names):
@@ -130,11 +151,13 @@ def render():
                     st.session_state["sel_bean"] = b_name
                     if st.session_state["wizard_step"] == 3:
                         st.session_state["wizard_step"] = 4
+                    st.session_state["scroll_target"] = "step-4"
                     st.rerun()
 
     # --- STEP 4: 味の方向性 ---
     if st.session_state["wizard_step"] >= 4:
         st.markdown("---")
+        st.markdown('<div id="step-4"></div>', unsafe_allow_html=True)
         st.markdown("#### ④ 味の方向性")
         flavors = ["すっきり・フルーティー", "バランス重視", "しっかり・コク旨"]
         flv_cols = st.columns(3)
@@ -145,11 +168,13 @@ def render():
                     st.session_state["sel_flavor"] = flv
                     if st.session_state["wizard_step"] == 4:
                         st.session_state["wizard_step"] = 5
+                    st.session_state["scroll_target"] = "step-5"
                     st.rerun()
 
-    # --- STEP 5: 詳細設定＆決定 ---
+    # --- STEP 5: 細かい設定＆決定 ---
     if st.session_state["wizard_step"] >= 5:
         st.markdown("---")
+        st.markdown('<div id="step-5"></div>', unsafe_allow_html=True)
         st.markdown("#### ⑤ 細かい設定")
         with st.expander("⚙️ 量・杯数・焙煎日の設定", expanded=True):
             col_sub1, col_sub2 = st.columns(2)
@@ -174,7 +199,7 @@ def render():
         chosen_bean = next((b for b in beans_data if b.get("name") == st.session_state["sel_bean"]), {"name": st.session_state["sel_bean"]})
         chosen_bean_id = chosen_bean.get("id") if isinstance(chosen_bean, dict) else None
 
-        # 過去のフィードバック取得
+        # 過去フィードバックの取得
         past_feedback_text = "過去の評価なし"
         if chosen_bean_id and confirmed_logs:
             past_logs = [l for l in confirmed_logs if l.get("bean_id") == chosen_bean_id]
@@ -256,6 +281,7 @@ def render():
                                     st.session_state["draft_log_id"] = new_res[0].get("id")
                         except Exception as e:
                             print(f"Draft save error: {e}")
+                        st.session_state["scroll_target"] = "recipe-view"
                         st.rerun()
                     else:
                         st.warning("⚠️ 全てのAIモデルサーバーが混雑しています。1分ほど置いてから再度お試しください。")
@@ -265,6 +291,7 @@ def render():
         with col_btn2:
             if st.button("🔄 やり直す", use_container_width=True):
                 st.session_state["wizard_step"] = 1
+                st.session_state["scroll_target"] = "step-1"
                 st.rerun()
 
     # --- レシピ表示・評価セクション ---
@@ -273,6 +300,7 @@ def render():
         params = st.session_state["current_drip_params"]
 
         st.divider()
+        st.markdown('<div id="recipe-view"></div>', unsafe_allow_html=True)
         st.success(f"レシピが完成しました！（{params.get('coffee_type', 'ホット')} / {params.get('water_per_cup', 300)}ml×{params.get('cup_count', 1)}杯）")
         st.markdown(f"### 📖 {recipe.get('recipe_title', '-')}")
 
@@ -365,6 +393,12 @@ def render():
                 if "draft_log_id" in st.session_state:
                     del st.session_state["draft_log_id"]
                 st.session_state["wizard_step"] = 1
+                st.session_state["scroll_target"] = "step-1"
                 st.rerun()
             except Exception as e:
                 st.error(f"保存エラー: {e}")
+
+    # 描画末尾でスクロール対象があれば実行
+    if "scroll_target" in st.session_state and st.session_state["scroll_target"]:
+        auto_scroll_to(st.session_state["scroll_target"])
+        st.session_state["scroll_target"] = None
