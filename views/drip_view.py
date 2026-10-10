@@ -369,7 +369,7 @@ def render():
             st.metric("GRIND", recipe.get('grind_setting', '-'))
             st.metric("BLOOM", formatted_bloom)
 
-        # GEAR 表示
+        # GEAR 表示 (常にオープン)
         st.markdown("#### GEAR")
         st.markdown(
             f"""
@@ -394,11 +394,11 @@ def render():
                     step_time = format_step_time(s.get('time', '-'))
                     st.markdown(
                         f"""
-                        <div style="background-color: #0D0D0D; padding: 12px 16px; border: 1px solid #262626; border-left: 3px solid #FF9900; margin-bottom: 12px; border-radius: 4px;">
+                        <div style="background-color: #0D0D0D; padding: 12px 16px; border: 1px solid #262626; border-left: 3px solid #00FF66; margin-bottom: 12px; border-radius: 4px;">
                             <div style="font-size: 1.0em; font-weight: bold; color: #FFFFFF;">
                                 STEP {s.get('step_number', '-')}: {s.get('purpose', '-')}
                             </div>
-                            <div style="font-size: 0.9em; font-weight: bold; color: #FF9900; margin-top: 2px;">
+                            <div style="font-size: 0.9em; font-weight: bold; color: #00FF66; margin-top: 2px;">
                                 {step_time}
                             </div>
                             <div style="margin-top: 8px; font-size: 0.9em; color: #CCCCCC;">
