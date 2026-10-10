@@ -1,3 +1,4 @@
+import re
 import datetime
 import streamlit as st
 import streamlit.components.v1 as components
@@ -26,6 +27,24 @@ def auto_scroll_to(element_id):
     </script>
     """
     components.html(js_code, height=0)
+
+# 蒸らし時間を純粋な「xx秒」のみに整形するヘルパー関数
+def format_bloom_time(raw_bloom):
+    if not raw_bloom or raw_bloom == '-':
+        return "-"
+    raw_str = str(raw_bloom).strip()
+    
+    # 0:00 - 0:40 形式から秒数を抽出
+    match_range = re.search(r'0:00\s*[-~〜]\s*0:(\d{1,2})', raw_str)
+    if match_range:
+        return f"{int(match_range.group(1))}秒"
+        
+    # 40s, 40sec, 40秒 などの数字抽出
+    match_sec = re.search(r'(\d+)', raw_str)
+    if match_sec:
+        return f"{int(match_sec.group(1))}秒"
+        
+    return raw_str
 
 def render():
     user_session_id = get_session_id()
@@ -310,11 +329,13 @@ def render():
             st.metric("お湯の温度", recipe.get('water_temp', '-'))
         with c_p2:
             st.metric("ミル挽き目", recipe.get('grind_setting', '-'))
-            ice_val = recipe.get('ice_amount', 'なし')
-            if ice_val and ice_val != 'なし' and ice_val != '-':
-                st.metric("事前投入の氷", f"🧊 {ice_val}")
-            else:
-                st.metric("蒸らし時間", recipe.get('bloom_time', '-'))
+            # 蒸らし時間を「xx秒」形式でシンプル表示
+            formatted_bloom = format_bloom_time(recipe.get('bloom_time'))
+            st.metric("蒸らし時間", formatted_bloom)
+
+        ice_val = recipe.get('ice_amount', 'なし')
+        if ice_val and ice_val != 'なし' and ice_val != '-':
+            st.info(f"🧊 **事前投入の氷（サーバー内）**: {ice_val}")
 
         with st.expander("✨ 使用指定器具の詳細を見る", expanded=False):
             st.write(f"- **ドリッパー**: {recipe.get('dripper', '-')}")
