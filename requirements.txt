@@ -1,5 +1,5 @@
 streamlit
 supabase
-google-genai
-pydantic
 python-dotenv
+requests
+google-generativeai
