@@ -8,6 +8,9 @@ SYSTEM_PROMPT = """
 あなたは世界最高峰のスペシャルティコーヒーバリスタです。
 最新の海外競技会トレンド（WBC / WBrC）に基づき、科学的かつ再現性の高いドリップレシピを生成してください。
 
+【重要：言語指定】
+生成するJSON内のすべての文字列（レシピ名、解説、目的、注水方法、流速、挽き目など）は、必ず自然な「日本語」で出力してください。
+
 【1. 最新海外トレンド抽出原則】
 - Bloom (蒸らし): 粉量の2.5〜3.0倍のお湯を使い、やや高めの位置から注いで粉全体に均一なアジテーション（撹拌）を与える。
 - Extraction Dynamics (抽出展開):
@@ -32,6 +35,7 @@ SYSTEM_PROMPT = """
 【3. 絶対制約事項】
 - 使用機材（ドリッパー、ミル、フィルター）は、必ず提供された `available_gears`（ON状態の機材）の中から最も相性の良いものを1点ずつ選定すること。
 - レシピステップ（recipe_steps）の `time` 表示は、そのステップが完了する目標経過時間（例: "0:45", "1:30", "2:30"）を記載すること。
+- 出力は必ず日本語で行うこと。
 """
 
 # JSON出力構造の標準定義
@@ -116,12 +120,12 @@ def generate_recipe_with_gemini(
     # --- 器具情報整形 ---
     gears_info = []
     for g in available_gears:
-        gears_info.append(f"- [{g.get('type')}] {g.get('name')} (Brand: {g.get('brand', '-')})")
+        gears_info.append(f"- [{g.get('type')}] {g.get('name')} (ブランド: {g.get('brand', '-')})")
     gears_str = "\n".join(gears_info) if gears_info else "特になし（標準機材で構成してください）"
 
     # --- SETUP 情報 ---
     setup_str = f"""
-- 豆名: {target_bean.get('name', 'Custom Bean')}
+- 豆名: {target_bean.get('name', 'カスタムビーン')}
 - 焙煎所: {target_bean.get('roastery', '-')}
 - 産地: {target_bean.get('origin', '-')}
 - 焙煎度: {target_bean.get('roast_level', 'MEDIUM')}
@@ -138,7 +142,7 @@ def generate_recipe_with_gemini(
         fb_lines = []
         for idx, fb in enumerate(recent_feedbacks, 1):
             data_obj = fb.get("data", {})
-            created_at = fb.get("created_at", "")[:10] if fb.get("created_at") else f"Log #{idx}"
+            created_at = fb.get("created_at", "")[:10] if fb.get("created_at") else f"ログ #{idx}"
             issues = ", ".join(data_obj.get("issues", [])) or "なし"
             improvements = ", ".join(data_obj.get("improvements", [])) or "なし"
             memo = data_obj.get("memo", "")
@@ -158,7 +162,7 @@ def generate_recipe_with_gemini(
     prompt_text = f"""
 {SYSTEM_PROMPT}
 
-以下の条件・データを掛け合わせ、最高の一杯となるハンドドリップレシピを生成してください。
+以下の条件・データを掛け合わせ、最高の一杯となるハンドドリップレシピを日本語で生成してください。
 
 【2. 所有器具情報 (available_gears)】
 {gears_str}
@@ -180,7 +184,6 @@ def generate_recipe_with_gemini(
     }
 
     last_error = ""
-    # 利用可能なモデル順に直接REST通信でリクエスト試行
     for api_version, model in usable_models:
         url = f"https://generativelanguage.googleapis.com/{api_version}/models/{model}:generateContent?key={api_key}"
         try:
