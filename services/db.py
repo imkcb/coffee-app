@@ -1,31 +1,51 @@
 import os
+import streamlit as st
 from supabase import create_client, Client
 
-# --- 1. Supabase クライアント初期化 (安全対策付き) ---
-raw_url = os.environ.get("SUPABASE_URL", "")
-# 前後の空白除去 ＆ 末尾スラッシュ(/)を強制排除してPGRST125エラーを防止
-supabase_url = raw_url.strip().rstrip("/")
-supabase_key = os.environ.get("SUPABASE_KEY", "").strip()
-
-if not supabase_url or not supabase_key:
-    supabase = None
-else:
+# --- 1. 安全な環境変数取得関数 ---
+def _get_secret(key: str) -> str:
+    """os.environ と st.secrets の両方から環境変数を取得"""
+    # 1. os.environ から取得
+    val = os.environ.get(key)
+    if val:
+        return val.strip()
+    # 2. st.secrets から取得
     try:
-        supabase: Client = create_client(supabase_url, supabase_key)
+        if key in st.secrets:
+            return str(st.secrets[key]).strip()
+    except Exception:
+        pass
+    return ""
+
+# --- 2. Supabase クライアント初期化 ---
+raw_url = _get_secret("SUPABASE_URL")
+# URLの整形 (末尾スラッシュや /rest/v1 などの誤入力を自動補正)
+supabase_url = raw_url.rstrip("/")
+if supabase_url.endswith("/rest/v1"):
+    supabase_url = supabase_url[:-8].rstrip("/")
+
+supabase_key = _get_secret("SUPABASE_KEY")
+
+supabase: Client = None
+
+if supabase_url and supabase_key:
+    try:
+        supabase = create_client(supabase_url, supabase_key)
     except Exception as e:
         print(f"Supabase Client Initialization Error: {e}")
         supabase = None
 
 
-# --- 2. BEANS (コーヒー豆) 操作 ---
+# --- 3. BEANS (コーヒー豆) 操作 ---
 def get_beans():
     if not supabase:
+        st.error("DB Connection Error: SUPABASE_URL または SUPABASE_KEY が取得できていません。")
         return []
     try:
         res = supabase.table("beans").select("*").order("created_at", desc=True).execute()
         return res.data
     except Exception as e:
-        print(f"Error fetching beans: {e}")
+        st.error(f"Error fetching beans: {e}")
         return []
 
 def add_bean(bean_data: dict):
@@ -35,7 +55,7 @@ def add_bean(bean_data: dict):
         res = supabase.table("beans").insert(bean_data).execute()
         return res.data
     except Exception as e:
-        print(f"Error adding bean: {e}")
+        st.error(f"Error adding bean: {e}")
         return None
 
 def update_bean(bean_id: str, bean_data: dict):
@@ -45,7 +65,7 @@ def update_bean(bean_id: str, bean_data: dict):
         res = supabase.table("beans").update(bean_data).eq("id", bean_id).execute()
         return res.data
     except Exception as e:
-        print(f"Error updating bean: {e}")
+        st.error(f"Error updating bean: {e}")
         return None
 
 def delete_bean(bean_id: str):
@@ -55,11 +75,11 @@ def delete_bean(bean_id: str):
         supabase.table("beans").delete().eq("id", bean_id).execute()
         return True
     except Exception as e:
-        print(f"Error deleting bean: {e}")
+        st.error(f"Error deleting bean: {e}")
         return False
 
 
-# --- 3. GEARS (抽出器具) 操作 ---
+# --- 4. GEARS (抽出器具) 操作 ---
 def get_gears():
     if not supabase:
         return []
@@ -67,7 +87,7 @@ def get_gears():
         res = supabase.table("gears").select("*").order("type").execute()
         return res.data
     except Exception as e:
-        print(f"Error fetching gears: {e}")
+        st.error(f"Error fetching gears: {e}")
         return []
 
 def add_gear(gear_data: dict):
@@ -77,7 +97,7 @@ def add_gear(gear_data: dict):
         res = supabase.table("gears").insert(gear_data).execute()
         return res.data
     except Exception as e:
-        print(f"Error adding gear: {e}")
+        st.error(f"Error adding gear: {e}")
         return None
 
 def update_gear(gear_id: str, gear_data: dict):
@@ -87,7 +107,7 @@ def update_gear(gear_id: str, gear_data: dict):
         res = supabase.table("gears").update(gear_data).eq("id", gear_id).execute()
         return res.data
     except Exception as e:
-        print(f"Error updating gear: {e}")
+        st.error(f"Error updating gear: {e}")
         return None
 
 def delete_gear(gear_id: str):
@@ -97,11 +117,11 @@ def delete_gear(gear_id: str):
         supabase.table("gears").delete().eq("id", gear_id).execute()
         return True
     except Exception as e:
-        print(f"Error deleting gear: {e}")
+        st.error(f"Error deleting gear: {e}")
         return False
 
 
-# --- 4. DRIP LOGS (抽出記録・FEEDBACK) 操作 ---
+# --- 5. DRIP LOGS (抽出記録・FEEDBACK) 操作 ---
 def get_drip_logs():
     if not supabase:
         return []
@@ -109,7 +129,7 @@ def get_drip_logs():
         res = supabase.table("drip_logs").select("*").order("created_at", desc=True).execute()
         return res.data
     except Exception as e:
-        print(f"Error fetching drip logs: {e}")
+        st.error(f"Error fetching drip logs: {e}")
         return []
 
 def add_drip_log(log_data: dict):
@@ -119,7 +139,7 @@ def add_drip_log(log_data: dict):
         res = supabase.table("drip_logs").insert(log_data).execute()
         return res.data
     except Exception as e:
-        print(f"Error adding drip log: {e}")
+        st.error(f"Error adding drip log: {e}")
         return None
 
 def delete_drip_log(log_id: str):
@@ -129,5 +149,5 @@ def delete_drip_log(log_id: str):
         supabase.table("drip_logs").delete().eq("id", log_id).execute()
         return True
     except Exception as e:
-        print(f"Error deleting drip log: {e}")
+        st.error(f"Error deleting drip log: {e}")
         return False
