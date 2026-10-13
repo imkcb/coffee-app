@@ -17,8 +17,8 @@ SYSTEM_PROMPT = """
   ・HOT: 基本粉湯比率は 1:15〜1:16.5。浅煎りは高湯温(90-94℃)、深煎りは低湯温(82-86℃)。
   ・ICE: 抽出液を濃縮するため 1:9〜1:10 で抽出させ、残りを氷で急冷・希釈する。
 
-【2. FEEDBACK（過去評価）に基づく可変アジャストルール】
-提示された FEEDBACK（直近の抽出評価）がある場合は、以下の通りレシピパラメータを可変調整してください：
+【2. FEEDBACK履歴（過去の抽出評価トレンド）に基づく可変アジャストルール】
+提示された FEEDBACK HISTORY（最大5件の時系列評価）を読み解き、特に直近の改善トレンドおよび継続的な課題を考慮してレシピを最適化してください：
 - FEELING（課題）への対応:
   ・「渋み・雑味」: 湯温を1〜2℃下げる、挽き目を1刻み粗くする、または後半の注水を抑える。
   ・「水っぽさ」: 粉湯比率を高濃度にし（お湯を減らす）、蒸らし時間または前半のアジテーションを強める。
@@ -27,6 +27,7 @@ SYSTEM_PROMPT = """
   ・「コク・ボディ」: 湯温を1℃上げ、中盤の注水を細かく分ける。
   ・「酸味・キレ」: 湯温を維持しつつ前半の注水比率を増やす。
   ・「雑味オフ」: 後半の注水を中央一点の静かな注水に変更する。
+※複数件の履歴がある場合、最新の評価を最も重視しつつ、過去に解決された課題が再発しないようバランスを取ること。
 
 【3. 絶対制約事項】
 - 使用機材（ドリッパー、ミル、フィルター）は、必ず提供された `available_gears`（ON状態の機材）の中から最も相性の良いものを1点ずつ選定すること。
@@ -37,7 +38,7 @@ SYSTEM_PROMPT = """
 
 {
   "recipe_title": "文字列 (例: MODERN HIGH-EXTRACTION DRIP)",
-  "notes": "文字列 (抽出コンセプトや前回フィードバックの反映点を簡潔に説明)",
+  "notes": "文字列 (抽出コンセプトや過去フィードバックの反映点を簡潔に説明)",
   "dripper": "文字列 (選定されたドリッパー名)",
   "filter": "文字列 (選定されたフィルター名)",
   "grinder": "文字列 (選定されたグラインダー名)",
@@ -68,10 +69,10 @@ def generate_recipe_with_gemini(
     flavor_profile: str,
     roast_date_str: str,
     available_gears: list,
-    recent_feedback: dict = None
+    recent_feedbacks: list = None
 ) -> dict:
     """
-    固定パラメータ(WBCトレンド)と可変パラメータ(機材、SETUP、FEEDBACK)を結合してレシピを生成
+    固定パラメータ(WBCトレンド)と可変パラメータ(機材、SETUP、直近最大5件のFEEDBACK履歴)を結合してレシピを生成
     """
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -79,7 +80,6 @@ def generate_recipe_with_gemini(
 
     client = genai.Client(api_key=api_key)
 
-    # 動的モデル探査（利用可能な最新モデルの取得）
     target_model = "gemini-2.5-flash"
     try:
         models = client.models.list()
@@ -99,7 +99,7 @@ def generate_recipe_with_gemini(
         gears_info.append(f"- [{g.get('type')}] {g.get('name')} (Brand: {g.get('brand', '-')})")
     gears_str = "\n".join(gears_info) if gears_info else "特になし（標準機材で構成してください）"
 
-    # --- 3. SET UP 情報を組み立て ---
+    # --- 3. SET UP 情報 ---
     setup_str = f"""
 - 豆名: {target_bean.get('name', 'Custom Bean')}
 - 焙煎所: {target_bean.get('roastery', '-')}
@@ -113,22 +113,28 @@ def generate_recipe_with_gemini(
 - 焙煎日: {roast_date_str}
 """
 
-    # --- 4. FEEDBACK データフォーマット ---
-    if recent_feedback:
-        data_obj = recent_feedback.get("data", {})
-        issues = data_obj.get("issues", [])
-        improvements = data_obj.get("improvements", [])
-        feedback_str = f"""
-- 過去評価(Rating): ★{data_obj.get('rating', '-')}
-- 味のバランス: 酸味({data_obj.get('acidity', '-')}), 苦味({data_obj.get('bitterness', '-')}), ボディ({data_obj.get('body', '-')})
-- 感じた課題(FEELING): {', '.join(issues) if issues else '特になし'}
-- 次回の改善目標(NEXT): {', '.join(improvements) if improvements else '特になし'}
-- ユーザーコメント: {data_obj.get('memo', '-')}
-"""
+    # --- 4. FEEDBACK 履歴（最大5件）を軽量フォーマット化 ---
+    if recent_feedbacks:
+        fb_lines = []
+        for idx, fb in enumerate(recent_feedbacks, 1):
+            data_obj = fb.get("data", {})
+            created_at = fb.get("created_at", "")[:10] if fb.get("created_at") else f"Log #{idx}"
+            issues = ", ".join(data_obj.get("issues", [])) or "なし"
+            improvements = ", ".join(data_obj.get("improvements", [])) or "なし"
+            memo = data_obj.get("memo", "")
+            
+            line = (
+                f"[{idx}] {created_at} | ★{data_obj.get('rating', '-')}"
+                f" | 酸味:{data_obj.get('acidity', '-')} 苦味:{data_obj.get('bitterness', '-')} ボディ:{data_obj.get('body', '-')}"
+                f" | 課題:{issues} | 目標:{improvements}"
+            )
+            if memo:
+                line += f" | 注記:{memo}"
+            fb_lines.append(line)
+        feedback_str = "\n".join(fb_lines)
     else:
         feedback_str = "過去のフィードバックデータなし（初抽出のためトレンド標準で作成）"
 
-    # 全パラメータをプロンプトに統合
     user_prompt = f"""
 以下の条件・データを掛け合わせ、最高の一杯となるハンドドリップレシピを生成してください。
 
@@ -138,7 +144,7 @@ def generate_recipe_with_gemini(
 【3. SET UP 情報】
 {setup_str}
 
-【4. 直近の FEEDBACK データ (過去ログの改善要望)】
+【4. 直近の FEEDBACK 履歴 (最新最大5件の時系列評価)】
 {feedback_str}
 """
 

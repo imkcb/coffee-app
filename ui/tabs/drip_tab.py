@@ -126,18 +126,17 @@ def render():
                     if g.get("is_active") is True or g.get("is_active") is None
                 ]
 
-                # 2. 直近のFEEDBACK（評価ログ）の取得
+                # 2. 直近最大5件のFEEDBACK（評価ログ）を取得
                 all_logs = db.get_drip_logs() or []
                 target_bean_id = target_bean.get("id")
-                recent_feedback = None
+                recent_feedbacks = []
                 
                 if target_bean_id:
-                    # 該当する豆の過去ログを検索し、最新1件を取得
                     bean_logs = [l for l in all_logs if l.get("bean_id") == target_bean_id]
                     if bean_logs:
-                        recent_feedback = bean_logs[0]
+                        recent_feedbacks = bean_logs[:5]  # 最新5件を取得
 
-                # 3. AIレシピ生成（固定ルール + 器具 + SETUP + FEEDBACK）
+                # 3. AIレシピ生成（固定ルール + 器具 + SETUP + FEEDBACK履歴5件）
                 recipe = ai.generate_recipe_with_gemini(
                     target_bean=target_bean,
                     coffee_type=coffee_type or "HOT",
@@ -145,7 +144,7 @@ def render():
                     flavor_profile=flavor_profile or "BALANCED",
                     roast_date_str=roast_date_str,
                     available_gears=active_gears,
-                    recent_feedback=recent_feedback
+                    recent_feedbacks=recent_feedbacks
                 )
                 st.session_state["current_recipe"] = recipe
                 st.session_state["current_bean"] = target_bean
