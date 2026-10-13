@@ -1,7 +1,7 @@
 import os
 import json
-from google import genai
-from google.genai import types
+import requests
+import streamlit as st
 
 # --- 1. 固定パラメータ (システムプロンプト & 最新世界トレンドルール) ---
 SYSTEM_PROMPT = """
@@ -32,35 +32,51 @@ SYSTEM_PROMPT = """
 【3. 絶対制約事項】
 - 使用機材（ドリッパー、ミル、フィルター）は、必ず提供された `available_gears`（ON状態の機材）の中から最も相性の良いものを1点ずつ選定すること。
 - レシピステップ（recipe_steps）の `time` 表示は、そのステップが完了する目標経過時間（例: "0:45", "1:30", "2:30"）を記載すること。
-
-【4. 出力フォーマット (JSON)】
-必ず以下のJSON構造のみで出力してください。余計なテキストは含めないでください。
-
-{
-  "recipe_title": "文字列 (例: MODERN HIGH-EXTRACTION DRIP)",
-  "notes": "文字列 (抽出コンセプトや過去フィードバックの反映点を簡潔に説明)",
-  "dripper": "文字列 (選定されたドリッパー名)",
-  "filter": "文字列 (選定されたフィルター名)",
-  "grinder": "文字列 (選定されたグラインダー名)",
-  "coffee_amount": "文字列 (例: 18g)",
-  "grind_setting": "文字列 (例: Comandante 22 clicks / Medium-Fine)",
-  "water_temp": "文字列 (例: 92°C)",
-  "bloom_time": "文字列 (例: 45s)",
-  "ice_amount": "文字列 (ICE時のみ使用。例: 120g / HOT時は None)",
-  "recipe_steps": [
-    {
-      "step_number": 1,
-      "purpose": "文字列 (例: Bloom & High Agitation)",
-      "time": "文字列 (例: 0:45)",
-      "pour_amount": "文字列 (例: 50ml)",
-      "total_amount": "文字列 (例: 50ml)",
-      "pouring_method": "文字列 (例: High pour center to edge)",
-      "flow_rate": "文字列 (例: Medium-Fast)"
-    }
-  ]
-}
 """
 
+# JSON出力構造の標準定義
+RESPONSE_SCHEMA = {
+    "type": "OBJECT",
+    "properties": {
+        "recipe_title": {"type": "STRING"},
+        "notes": {"type": "STRING"},
+        "dripper": {"type": "STRING"},
+        "filter": {"type": "STRING"},
+        "grinder": {"type": "STRING"},
+        "coffee_amount": {"type": "STRING"},
+        "grind_setting": {"type": "STRING"},
+        "water_temp": {"type": "STRING"},
+        "bloom_time": {"type": "STRING"},
+        "ice_amount": {"type": "STRING"},
+        "recipe_steps": {
+            "type": "ARRAY",
+            "items": {
+                "type": "OBJECT",
+                "properties": {
+                    "step_number": {"type": "INTEGER"},
+                    "purpose": {"type": "STRING"},
+                    "time": {"type": "STRING"},
+                    "pour_amount": {"type": "STRING"},
+                    "total_amount": {"type": "STRING"},
+                    "pouring_method": {"type": "STRING"},
+                    "flow_rate": {"type": "STRING"}
+                },
+                "required": ["step_number", "purpose", "time", "pour_amount", "total_amount", "pouring_method", "flow_rate"]
+            }
+        }
+    },
+    "required": ["recipe_title", "notes", "dripper", "filter", "grinder", "coffee_amount", "grind_setting", "water_temp", "bloom_time", "recipe_steps"]
+}
+
+def _get_api_key():
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        try:
+            if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
+                api_key = str(st.secrets["GEMINI_API_KEY"]).strip()
+        except Exception:
+            pass
+    return api_key
 
 def generate_recipe_with_gemini(
     target_bean: dict,
@@ -71,35 +87,39 @@ def generate_recipe_with_gemini(
     available_gears: list,
     recent_feedbacks: list = None
 ) -> dict:
-    """
-    固定パラメータ(WBCトレンド)と可変パラメータ(機材、SETUP、直近最大5件のFEEDBACK履歴)を結合してレシピを生成
-    """
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = _get_api_key()
     if not api_key:
-        raise ValueError("GEMINI_API_KEY is not configured.")
+        raise ValueError("GEMINI_API_KEY が設定されていません。")
 
-    client = genai.Client(api_key=api_key)
+    # --- REST APIによる動的モデル探査 ---
+    usable_models = []
+    for api_version in ["v1beta", "v1"]:
+        list_url = f"https://generativelanguage.googleapis.com/{api_version}/models?key={api_key}"
+        try:
+            res = requests.get(list_url, timeout=5)
+            if res.status_code == 200:
+                for m in res.json().get("models", []):
+                    methods = m.get("supportedGenerationMethods", [])
+                    if "generateContent" in methods:
+                        m_name = m.get("name", "").replace("models/", "")
+                        if m_name:
+                            if "flash" in m_name:
+                                usable_models.insert(0, (api_version, m_name))
+                            else:
+                                usable_models.append((api_version, m_name))
+        except Exception:
+            pass
 
-    target_model = "gemini-2.5-flash"
-    try:
-        models = client.models.list()
-        available_names = [m.name for m in models]
-        for name in available_names:
-            if "gemini-2.5-flash" in name:
-                target_model = name
-                break
-            elif "gemini-1.5-flash" in name:
-                target_model = name
-    except Exception:
-        pass
+    if not usable_models:
+        usable_models = [("v1beta", "gemini-1.5-flash"), ("v1", "gemini-1.5-flash")]
 
-    # --- 2. 器具情報のフォーマット ---
+    # --- 器具情報整形 ---
     gears_info = []
     for g in available_gears:
         gears_info.append(f"- [{g.get('type')}] {g.get('name')} (Brand: {g.get('brand', '-')})")
     gears_str = "\n".join(gears_info) if gears_info else "特になし（標準機材で構成してください）"
 
-    # --- 3. SET UP 情報 ---
+    # --- SETUP 情報 ---
     setup_str = f"""
 - 豆名: {target_bean.get('name', 'Custom Bean')}
 - 焙煎所: {target_bean.get('roastery', '-')}
@@ -113,7 +133,7 @@ def generate_recipe_with_gemini(
 - 焙煎日: {roast_date_str}
 """
 
-    # --- 4. FEEDBACK 履歴（最大5件）を軽量フォーマット化 ---
+    # --- FEEDBACK 履歴整形 ---
     if recent_feedbacks:
         fb_lines = []
         for idx, fb in enumerate(recent_feedbacks, 1):
@@ -135,7 +155,9 @@ def generate_recipe_with_gemini(
     else:
         feedback_str = "過去のフィードバックデータなし（初抽出のためトレンド標準で作成）"
 
-    user_prompt = f"""
+    prompt_text = f"""
+{SYSTEM_PROMPT}
+
 以下の条件・データを掛け合わせ、最高の一杯となるハンドドリップレシピを生成してください。
 
 【2. 所有器具情報 (available_gears)】
@@ -148,14 +170,30 @@ def generate_recipe_with_gemini(
 {feedback_str}
 """
 
-    response = client.models.generate_content(
-        model=target_model,
-        contents=user_prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            temperature=0.2,
-            response_mime_type="application/json",
-        ),
-    )
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "contents": [{"parts": [{"text": prompt_text}]}],
+        "generationConfig": {
+            "response_mime_type": "application/json",
+            "response_schema": RESPONSE_SCHEMA
+        }
+    }
 
-    return json.loads(response.text)
+    last_error = ""
+    # 利用可能なモデル順に直接REST通信でリクエスト試行
+    for api_version, model in usable_models:
+        url = f"https://generativelanguage.googleapis.com/{api_version}/models/{model}:generateContent?key={api_key}"
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=20)
+            if response.status_code == 200:
+                res_json = response.json()
+                candidates = res_json.get("candidates", [])
+                if candidates:
+                    text_content = candidates[0]["content"]["parts"][0]["text"]
+                    return json.loads(text_content)
+            else:
+                last_error = f"[{model}] ({response.status_code}): {response.text}"
+        except Exception as e:
+            last_error = f"[{model}] {str(e)}"
+
+    raise RuntimeError(f"API通信エラー: {last_error}")
