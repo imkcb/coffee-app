@@ -42,6 +42,7 @@ def render():
             label_visibility="collapsed"
         )
         target_bean = {
+            "id": None,
             "name": f"CUSTOM BEAN ({roast_level_override})",
             "roast_level": roast_level_override,
             "roastery": "NONE"
@@ -118,19 +119,33 @@ def render():
 
         with st.spinner("Thinking..."):
             try:
+                # 1. アクティブ器具リストの取得
                 all_gears = db.get_gears() or []
                 active_gears = [
                     g for g in all_gears 
                     if g.get("is_active") is True or g.get("is_active") is None
                 ]
 
+                # 2. 直近のFEEDBACK（評価ログ）の取得
+                all_logs = db.get_drip_logs() or []
+                target_bean_id = target_bean.get("id")
+                recent_feedback = None
+                
+                if target_bean_id:
+                    # 該当する豆の過去ログを検索し、最新1件を取得
+                    bean_logs = [l for l in all_logs if l.get("bean_id") == target_bean_id]
+                    if bean_logs:
+                        recent_feedback = bean_logs[0]
+
+                # 3. AIレシピ生成（固定ルール + 器具 + SETUP + FEEDBACK）
                 recipe = ai.generate_recipe_with_gemini(
                     target_bean=target_bean,
                     coffee_type=coffee_type or "HOT",
                     water_ml=water_ml,
                     flavor_profile=flavor_profile or "BALANCED",
                     roast_date_str=roast_date_str,
-                    available_gears=active_gears
+                    available_gears=active_gears,
+                    recent_feedback=recent_feedback
                 )
                 st.session_state["current_recipe"] = recipe
                 st.session_state["current_bean"] = target_bean
@@ -145,11 +160,8 @@ def render():
 
     if recipe:
         st.markdown("<hr>", unsafe_allow_html=True)
-        
-        # スクロール対象用アンカーターゲット
         st.markdown('<div id="recipe-top"></div>', unsafe_allow_html=True)
 
-        # 自動スムーズスクロール実行ロジック (見切れ防止のため center 指定)
         if st.session_state.get("should_scroll_to_recipe", False):
             components.html(
                 """
@@ -190,7 +202,7 @@ def render():
             unsafe_allow_html=True
         )
 
-        # 4. SPEC (BEAN 標記)
+        # 4. SPEC
         st.markdown('<div class="pixel-header">SPEC</div>', unsafe_allow_html=True)
         
         coffee_val = recipe.get('coffee_amount', '-')
@@ -231,7 +243,6 @@ def render():
             if idx > 0:
                 prev_time = steps[idx - 1].get("time", "")
                 if idx == total_steps - 1:
-                    # 最後のステップのみ: 前ステップ時間（開始）〜自ステップ時間（終了）を表示
                     curr_time = step.get("time", "")
                     if prev_time and curr_time:
                         time_html = f'<div class="step-time">-{prev_time}-{curr_time}</div>'
@@ -243,7 +254,6 @@ def render():
 
             pour_ml = extract_ml(step.get("pour_amount", ""))
             wait_ratio = round((pour_ml / total_recipe_water) * 100) if total_recipe_water > 0 else 0
-
             total_amt = step.get("total_amount", "")
 
             st.markdown(
