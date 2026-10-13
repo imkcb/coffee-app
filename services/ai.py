@@ -8,8 +8,10 @@ SYSTEM_PROMPT = """
 あなたは世界最高峰のスペシャルティコーヒーバリスタです。
 最新の海外競技会トレンド（WBC / WBrC）に基づき、科学的かつ再現性の高いドリップレシピを生成してください。
 
-【重要：言語指定】
-生成するJSON内のすべての文字列（レシピ名、解説、目的、注水方法、流速、挽き目など）は、必ず自然な「日本語」で出力してください。
+【重要：言語および記述レベル指定】
+- 生成するJSON内のすべての文字列（レシピ名、解説、目的、注水方法、流速、挽き目など）は、必ず自然な「日本語」で出力してください。
+- 注水方法（pouring_method）は、単に「注ぐ」だけでなく、「中央から外側へ円を描くように」「高めの落差をつけて撹拌しながら」など、手元の動きが明確にイメージできる詳細な表現にすること。
+- 流速・流量（flow_rate）は、単に「中速」等と書くだけでなく、「中流 (約8〜10ml/s)」「細流 (約5ml/s)」「太流 (約12〜15ml/s)」のように、（）内に具体的な流量(ml/s)を含めて記述すること。
 
 【1. 最新海外トレンド抽出原則】
 - Bloom (蒸らし): 粉量の2.5〜3.0倍のお湯を使い、やや高めの位置から注いで粉全体に均一なアジテーション（撹拌）を与える。
@@ -95,7 +97,6 @@ def generate_recipe_with_gemini(
     if not api_key:
         raise ValueError("GEMINI_API_KEY が設定されていません。")
 
-    # --- REST APIによる動的モデル探査 ---
     usable_models = []
     for api_version in ["v1beta", "v1"]:
         list_url = f"https://generativelanguage.googleapis.com/{api_version}/models?key={api_key}"
@@ -117,13 +118,11 @@ def generate_recipe_with_gemini(
     if not usable_models:
         usable_models = [("v1beta", "gemini-1.5-flash"), ("v1", "gemini-1.5-flash")]
 
-    # --- 器具情報整形 ---
     gears_info = []
     for g in available_gears:
         gears_info.append(f"- [{g.get('type')}] {g.get('name')} (ブランド: {g.get('brand', '-')})")
     gears_str = "\n".join(gears_info) if gears_info else "特になし（標準機材で構成してください）"
 
-    # --- SETUP 情報 ---
     setup_str = f"""
 - 豆名: {target_bean.get('name', 'カスタムビーン')}
 - 焙煎所: {target_bean.get('roastery', '-')}
@@ -137,7 +136,6 @@ def generate_recipe_with_gemini(
 - 焙煎日: {roast_date_str}
 """
 
-    # --- FEEDBACK 履歴整形 ---
     if recent_feedbacks:
         fb_lines = []
         for idx, fb in enumerate(recent_feedbacks, 1):
@@ -163,6 +161,7 @@ def generate_recipe_with_gemini(
 {SYSTEM_PROMPT}
 
 以下の条件・データを掛け合わせ、最高の一杯となるハンドドリップレシピを日本語で生成してください。
+特に、各ステップの注水方法(pouring_method)は動作が明確に伝わるよう詳細に記述し、流速・流量(flow_rate)には（）内に具体的な流量(ml/s)を明記してください。
 
 【2. 所有器具情報 (available_gears)】
 {gears_str}
