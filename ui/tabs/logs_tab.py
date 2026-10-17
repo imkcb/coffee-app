@@ -1,9 +1,17 @@
-import datetime
 import streamlit as st
 import streamlit.components.v1 as components
 from services import db
 
+def extract_ml(text):
+    import re
+    if not text:
+        return 0
+    match = re.search(r'(\d+)', str(text))
+    return int(match.group(1)) if match else 0
+
 def render():
+    st.markdown('<div class="pixel-header">LOGS</div>', unsafe_allow_html=True)
+
     logs = db.get_drip_logs() or []
     
     if not logs:
@@ -16,7 +24,6 @@ def render():
     for log in logs:
         log_id = log.get("id")
         created_at_str = log.get("created_at", "")
-        
         date_display = created_at_str[:10] if created_at_str else "-"
 
         bean_id = log.get("bean_id")
@@ -33,8 +40,8 @@ def render():
 
         with st.expander(header_text):
             acidity = log_data.get("acidity", "Optimal")
-            bitterness = log_data.get("bitterness", log_data.get("bitterness_body", "Optimal"))
-            body = log_data.get("body", log_data.get("bitterness_body", "Optimal"))
+            bitterness = log_data.get("bitterness", "Optimal")
+            body = log_data.get("body", "Optimal")
             issues_list = log_data.get("issues", [])
             improvements_list = log_data.get("improvements", [])
             memo = log_data.get("memo") or ""
@@ -53,16 +60,48 @@ def render():
                 unsafe_allow_html=True
             )
 
+            # レシピ詳細（SPEC / GEAR / STEPS）の表示
             if recipe:
                 st.markdown("<hr>", unsafe_allow_html=True)
+                st.markdown(f'<div style="font-size: 0.95rem; font-weight: bold; margin-bottom: 8px;">BREWING RECIPE: {recipe.get("recipe_title", "")}</div>', unsafe_allow_html=True)
+                
+                # SPEC & GEAR
+                c_amt = recipe.get("coffee_amount", "-")
+                grind = recipe.get("grind_setting", "-")
+                temp = recipe.get("water_temp", "-")
+                bloom = recipe.get("bloom_time", "-")
+                dripper = recipe.get("dripper", "-")
+                filter_paper = recipe.get("filter", "-")
+                grinder = recipe.get("grinder", "-")
+
                 st.markdown(
-                    f'<div style="font-size: 0.95rem; font-weight: bold; margin-bottom: 6px;">BREWING RECIPE</div>'
-                    f'<div style="font-size: 0.85rem; color: var(--subtext-color); line-height: 1.5;">'
-                    f'• Bean: {recipe.get("coffee_amount", "-")} | Grind: {recipe.get("grind_setting", "-")} | Temp: {recipe.get("water_temp", "-")}<br>'
-                    f'• Dripper: {recipe.get("dripper", "-")} | Filter: {recipe.get("filter", "-")} | Grinder: {recipe.get("grinder", "-")}'
+                    f'<div style="font-size: 0.85rem; color: var(--subtext-color); line-height: 1.5; margin-bottom: 12px;">'
+                    f'<b>【 SPEC 】</b> BEAN: {c_amt} | GRIND: {grind} | TEMP: {temp} | BLOOM: {bloom}<br>'
+                    f'<b>【 GEAR 】</b> Dripper: {dripper} | Filter: {filter_paper} | Grinder: {grinder}'
                     f'</div>',
                     unsafe_allow_html=True
                 )
+
+                # STEPS 詳細表示
+                steps = recipe.get("recipe_steps", [])
+                if steps:
+                    st.markdown('<div style="font-size: 0.85rem; font-weight: bold; margin-bottom: 6px;">【 STEPS 】</div>', unsafe_allow_html=True)
+                    for idx, step in enumerate(steps):
+                        s_num = step.get("step_number", idx + 1)
+                        s_purpose = step.get("purpose", "")
+                        s_time = step.get("time", "")
+                        s_pour = step.get("pour_amount", "")
+                        s_total = step.get("total_amount", "")
+                        s_method = step.get("pouring_method", "")
+                        s_flow = step.get("flow_rate", "")
+
+                        st.markdown(
+                            f'<div style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem; border-left: 3px solid #4CAF50;">'
+                            f'<div style="font-weight: bold;">STEP {s_num} ({s_time}) - {s_purpose}</div>'
+                            f'<div>・注水量: <b>{s_pour}</b> (累計: {s_total}) | 方法: {s_method} ({s_flow})</div>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
 
             st.markdown("<br>", unsafe_allow_html=True)
 
@@ -78,7 +117,7 @@ def render():
                 if st.button("DELETE", key=f"btn_del_log_{log_id}", use_container_width=True):
                     st.session_state[del_confirm_key] = True
 
-            # EDIT フォーム + 自動スムーズスクロール
+            # EDIT フォーム
             if st.session_state.get(edit_key, False):
                 st.markdown("<hr>", unsafe_allow_html=True)
                 st.markdown(f'<div id="edit-anchor-log-{log_id}"></div>', unsafe_allow_html=True)
@@ -96,7 +135,6 @@ def render():
                 st.markdown('<div class="sub-header">EDIT LOG</div>', unsafe_allow_html=True)
                 with st.form(f"edit_log_form_{log_id}"):
                     e_rating = st.slider("Rating (1-5)", min_value=1, max_value=5, value=int(rating_num))
-                    
                     slider_opts = ["Very Light", "Light", "Optimal", "Strong", "Very Strong"]
                     
                     e_acidity_idx = slider_opts.index(acidity) if acidity in slider_opts else 2
@@ -130,14 +168,14 @@ def render():
                         updated_data["memo"] = e_memo
 
                         update_payload = {"data": updated_data}
-                        if hasattr(db, 'update_drip_log') and db.update_drip_log(log_id, update_payload):
+                        if db.update_drip_log(log_id, update_payload):
                             st.success("Updated successfully.")
                             st.session_state[edit_key] = False
                             st.rerun()
                         else:
                             st.error("Failed to update log.")
 
-            # DELETE 再確認表示 + 自動スムーズスクロール
+            # DELETE 再確認表示
             if st.session_state.get(del_confirm_key, False):
                 st.markdown("<hr>", unsafe_allow_html=True)
                 st.markdown(f'<div id="del-anchor-log-{log_id}"></div>', unsafe_allow_html=True)

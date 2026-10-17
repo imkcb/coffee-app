@@ -151,3 +151,13 @@ def delete_drip_log(log_id: str):
     except Exception as e:
         st.error(f"Error deleting drip log: {e}")
         return False
+
+def update_drip_log(log_id: str, log_data: dict):
+    if not supabase:
+        return None
+    try:
+        res = supabase.table("drip_logs").update(log_data).eq("id", log_id).execute()
+        return res.data
+    except Exception as e:
+        print(f"Error updating drip log: {e}")
+        return None
