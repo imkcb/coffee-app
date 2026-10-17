@@ -32,7 +32,7 @@ def render():
         log_data = log.get("data") or {}
         recipe = log_data.get("recipe") or {}
 
-        recipe_title = recipe.get("recipe_title", "RECIPE")
+        recipe_title = recipe.get("recipe_title", "RECIPE") if isinstance(recipe, dict) else "RECIPE"
         rating_num = log_data.get("rating", 3)
         flavor_profile = log.get("flavor_profile") or "BALANCED"
 
@@ -60,8 +60,8 @@ def render():
                 unsafe_allow_html=True
             )
 
-            # レシピ詳細（SPEC / GEAR / STEPS）の表示
-            if recipe:
+            # レシピ詳細（SPEC / GEAR / STEPS）の表示（型安全ガード付き）
+            if isinstance(recipe, dict) and recipe:
                 st.markdown("<hr>", unsafe_allow_html=True)
                 st.markdown(f'<div style="font-size: 0.95rem; font-weight: bold; margin-bottom: 8px;">BREWING RECIPE: {recipe.get("recipe_title", "")}</div>', unsafe_allow_html=True)
                 
@@ -82,11 +82,13 @@ def render():
                     unsafe_allow_html=True
                 )
 
-                # STEPS 詳細表示
+                # STEPS 詳細表示（型安全ガード付き）
                 steps = recipe.get("recipe_steps", [])
-                if steps:
+                if isinstance(steps, list) and steps:
                     st.markdown('<div style="font-size: 0.85rem; font-weight: bold; margin-bottom: 6px;">【 STEPS 】</div>', unsafe_allow_html=True)
                     for idx, step in enumerate(steps):
+                        if not isinstance(step, dict):
+                            continue
                         s_num = step.get("step_number", idx + 1)
                         s_purpose = step.get("purpose", "")
                         s_time = step.get("time", "")
