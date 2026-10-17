@@ -22,17 +22,17 @@ SYSTEM_PROMPT = """
   ・HOT: 基本粉湯比率は 1:15〜1:16.5。浅煎りは高湯温(90-94℃)、深煎りは低湯温(82-86℃)。
   ・ICE: 抽出液を濃縮するため 1:9〜1:10 で抽出させ、残りを氷で急冷・希釈する。
 
-【2. FEEDBACK履歴（過去の抽出評価トレンド）に基づく可変アジャストルール】
-提示された FEEDBACK HISTORY（最大5件の時系列評価）を読み解き、特に直近の改善トレンドおよび継続的な課題を考慮してレシピを最適化してください：
-- FEELING（課題）への対応:
-  ・「渋み・雑味」: 湯温を1〜2℃下げる、挽き目を1刻み粗くする、または後半の注水を抑える。
-  ・「水っぽさ」: 粉湯比率を高濃度にし（お湯を減らす）、蒸らし時間または前半のアジテーションを強める。
-  ・「重さ・濁り」: 挽き目を粗くし、注水回数を減らして流速を上げる。
+【2. FEEDBACK履歴（過去の抽出評価トレンドとSPEC・STEP構成）に基づく可変アジャストルール】
+提示された FEEDBACK HISTORY（最大5件の時系列評価、過去のSPEC設定数値、およびSTEP構成）を精密に解析し、前回の具体的数値（挽き目・湯温等）を基準に調整を行ってください：
+- 前回のSPEC情報（粉量・挽き目・湯温・蒸らし時間）からの定量アジャスト:
+  ・「渋み・雑味」: 前回の湯温から1〜2℃下げる、前回の挽き目から1刻み粗くする、または後半の注水を抑える。
+  ・「水っぽさ」: 前回の粉湯比率を高濃度にし（お湯を減らす）、前回の蒸らし時間や前半のアジテーションを強める。
+  ・「重さ・濁り」: 前回の挽き目より粗くし、注水回数を減らして流速を上げる。
 - NEXT（目標）への対応:
-  ・「コク・ボディ」: 湯温を1℃上げ、中盤の注水を細かく分ける。
-  ・「酸味・キレ」: 湯温を維持しつつ前半の注水比率を増やす。
+  ・「コク・ボディ」: 前回の湯温より1℃上げ、中盤の注水を細かく分ける。
+  ・「酸味・キレ」: 前回の湯温を維持しつつ前半の注水比率を増やす。
   ・「雑味オフ」: 後半の注水を中央一点の静かな注水に変更する。
-※複数件の履歴がある場合、最新の評価を最も重視しつつ、過去に解決された課題が再発しないようバランスを取ること。
+※複数件の履歴がある場合、最新のSPEC数値および評価結果を基準とし、過去に良好だった数値バランスを崩さないよう微調整すること。
 
 【3. 絶対制約事項】
 - 使用機材（ドリッパー、ミル、フィルター）は、必ず提供された `available_gears`（ON状態の機材）の中から最も相性の良いものを1点ずつ選定すること。
@@ -136,6 +136,7 @@ def generate_recipe_with_gemini(
 - 焙煎日: {roast_date_str}
 """
 
+    # --- FEEDBACK 履歴 ＋ SPEC数値 ＋ STEP構成のテキスト化 ---
     if recent_feedbacks:
         fb_lines = []
         for idx, fb in enumerate(recent_feedbacks, 1):
@@ -145,9 +146,30 @@ def generate_recipe_with_gemini(
             improvements = ", ".join(data_obj.get("improvements", [])) or "なし"
             memo = data_obj.get("memo", "")
             
+            # 過去のレシピデータ（SPEC情報およびSTEP情報）を取得
+            past_recipe = data_obj.get("recipe", {})
+            
+            # SPEC数値の抽出
+            p_coffee = past_recipe.get("coffee_amount") or "-"
+            p_grind = past_recipe.get("grind_setting") or fb.get("grind_setting") or data_obj.get("grind_setting") or "-"
+            p_temp = past_recipe.get("water_temp") or "-"
+            p_bloom = past_recipe.get("bloom_time") or "-"
+            spec_summary = f"粉量:{p_coffee}, 挽き目:{p_grind}, 湯温:{p_temp}, 蒸らし:{p_bloom}"
+
+            # STEP構成の要約抽出
+            past_steps = past_recipe.get("recipe_steps", [])
+            steps_summary_list = []
+            for s in past_steps:
+                p_amt = s.get("pour_amount", "")
+                p_time = s.get("time", "")
+                steps_summary_list.append(f"S{s.get('step_number')}:{p_amt}({p_time})")
+            steps_summary_str = " -> ".join(steps_summary_list) if steps_summary_list else "なし"
+            
             line = (
                 f"[{idx}] {created_at} | ★{data_obj.get('rating', '-')}"
                 f" | 酸味:{data_obj.get('acidity', '-')} 苦味:{data_obj.get('bitterness', '-')} ボディ:{data_obj.get('body', '-')}"
+                f" | 過去SPEC:[{spec_summary}]"
+                f" | STEP構成:[{steps_summary_str}]"
                 f" | 課題:{issues} | 目標:{improvements}"
             )
             if memo:
@@ -161,7 +183,8 @@ def generate_recipe_with_gemini(
 {SYSTEM_PROMPT}
 
 以下の条件・データを掛け合わせ、最高の一杯となるハンドドリップレシピを日本語で生成してください。
-特に、各ステップの注水方法(pouring_method)は動作が明確に伝わるよう詳細に記述し、流速・流量(flow_rate)には（）内に具体的な流量(ml/s)を明記してください。
+特に、前回の【過去SPEC（挽き目・湯温等）】の具体数値を基準とし、フィードバック（課題・目標）に応じて定量的な微調整を行ってください。
+また、各ステップの注水方法(pouring_method)は動作が明確に伝わるよう詳細に記述し、流速・流量(flow_rate)には（）内に具体的な流量(ml/s)を明記してください。
 
 【2. 所有器具情報 (available_gears)】
 {gears_str}
@@ -169,7 +192,7 @@ def generate_recipe_with_gemini(
 【3. SET UP 情報】
 {setup_str}
 
-【4. 直近の FEEDBACK 履歴 (最新最大5件の時系列評価)】
+【4. 直近の FEEDBACK 履歴 (最新最大5件の時系列評価・過去SPEC数値・STEP構成)】
 {feedback_str}
 """
 
